@@ -22,6 +22,7 @@ export interface Env {
   DB: D1Database;
   TARBALLS: KVNamespace;
   ENVIRONMENT: string;
+  REGISTRY_ADMIN_TOKEN?: string;
 }
 
 // ── CORS helpers ──────────────────────────────────────────────────────────────
@@ -31,13 +32,14 @@ function corsHeaders(): Record<string, string> {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Vary': 'Origin',
   };
 }
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(), ...extra },
   });
 }
 
@@ -59,6 +61,29 @@ function getToken(req: Request): string | null {
   if (!auth?.startsWith('Bearer ')) return null;
   const token = auth.slice(7).trim();
   return token.length > 0 ? token : null;
+}
+
+async function hashToken(token: string): Promise<string> {
+  const data = new TextEncoder().encode(token);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashBytes(bytes: Uint8Array): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function validateToken(token: string, env: Env): Promise<{ valid: boolean; owner: string }> {
+  const hash = await hashToken(token);
+  const row = await env.DB.prepare(
+    'SELECT owner FROM tokens WHERE token_hash = ?'
+  ).bind(hash).first<{ owner: string }>();
+  if (!row) return { valid: false, owner: '' };
+  await env.DB.prepare(
+    'UPDATE tokens SET last_used_at = ? WHERE token_hash = ?'
+  ).bind(new Date().toISOString(), hash).run();
+  return { valid: true, owner: row.owner };
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -88,6 +113,11 @@ export default {
     }
 
     // ── API v1 ─────────────────────────────────────────────────────────────
+
+    // POST /v1/auth/register     — create a publish token (admin only)
+    if (pathname === '/v1/auth/register' && method === 'POST') {
+      return handleAuthRegister(request, env);
+    }
 
     // GET /v1/packages           — list / search packages
     if (pathname === '/v1/packages' && method === 'GET') {
@@ -568,9 +598,33 @@ async function handleList(env: Env, params: URLSearchParams): Promise<Response> 
   return json({ success: true, packages, count: packages.length });
 }
 
+async function handleAuthRegister(request: Request, env: Env): Promise<Response> {
+  const token = getToken(request);
+  if (!token) return err('Authorization required', 401);
+  if (!env.REGISTRY_ADMIN_TOKEN || token !== env.REGISTRY_ADMIN_TOKEN) {
+    return err('Invalid admin token', 403);
+  }
+
+  let body: { owner?: string } = {};
+  try { body = await request.json() as { owner?: string }; } catch { /* owner defaults to 'unknown' */ }
+
+  const owner = (typeof body.owner === 'string' && body.owner.trim()) ? body.owner.trim() : 'unknown';
+  const newToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+  const hash = await hashToken(newToken);
+
+  await env.DB.prepare(
+    'INSERT INTO tokens (token_hash, owner, created_at) VALUES (?, ?, ?)'
+  ).bind(hash, owner, new Date().toISOString()).run();
+
+  return json({ success: true, token: newToken, owner }, 201);
+}
+
 async function handlePublish(request: Request, env: Env): Promise<Response> {
   const token = getToken(request);
   if (!token) return err('Authorization required. Set a token with: cerebrex auth login', 401);
+
+  const { valid, owner } = await validateToken(token, env);
+  if (!valid) return err('Invalid or revoked token. Run: cerebrex auth login', 401);
 
   let body: {
     name?: string;
@@ -607,6 +661,10 @@ async function handlePublish(request: Request, env: Env): Promise<Response> {
     return err('tarball must be valid base64');
   }
 
+  if (tarballBytes.length < 1024) {
+    return err('Tarball is too small (minimum 1KB). This does not look like a valid package.');
+  }
+
   if (tarballBytes.length > 25 * 1024 * 1024) {
     return err('Tarball exceeds 25MB limit');
   }
@@ -619,29 +677,29 @@ async function handlePublish(request: Request, env: Env): Promise<Response> {
 
   if (existing) return err(`${name}@${version} already published. Bump the version.`, 409);
 
+  const sha256 = await hashBytes(tarballBytes);
   await env.TARBALLS.put(tarballKey, tarballBytes.buffer as ArrayBuffer);
 
   const publishedAt = new Date().toISOString();
-  const author = token.slice(0, 8) + '...';
   await env.DB.prepare(
-    `INSERT INTO packages (name, version, description, author, tags, tarball_key, tarball_size, published_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO packages (name, version, description, author, tags, tarball_key, tarball_size, sha256, published_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
-    name, version, description, author,
+    name, version, description, owner,
     JSON.stringify(tags), tarballKey,
-    tarballBytes.length, publishedAt
+    tarballBytes.length, sha256, publishedAt
   ).run();
 
   return json({
     success: true,
-    package: { name, version, description, tags, tarball_size: tarballBytes.length, published_at: publishedAt },
+    package: { name, version, description, tags, tarball_size: tarballBytes.length, sha256, published_at: publishedAt },
     url: `https://cerebrex-registry.therealjosefdmcclammey.workers.dev/v1/packages/${encodeURIComponent(name)}/${version}`,
   }, 201);
 }
 
 async function handleGetPackage(env: Env, name: string): Promise<Response> {
   const { results } = await env.DB.prepare(
-    `SELECT name, version, description, author, tags, tarball_size, published_at
+    `SELECT name, version, description, author, tags, tarball_size, sha256, published_at
      FROM packages WHERE name = ? ORDER BY published_at DESC`
   ).bind(name).all();
 
@@ -659,7 +717,7 @@ async function handleGetVersion(env: Env, name: string, version: string): Promis
   if (!resolvedVersion) return err(`Package '${name}' not found`, 404);
 
   const row = await env.DB.prepare(
-    `SELECT name, version, description, author, tags, tarball_size, published_at
+    `SELECT name, version, description, author, tags, tarball_size, sha256, published_at
      FROM packages WHERE name = ? AND version = ?`
   ).bind(name, resolvedVersion).first();
 
@@ -683,8 +741,8 @@ async function handleDownload(env: Env, name: string, version: string): Promise<
   if (!resolvedVersion) return err(`Package '${name}' not found`, 404);
 
   const row = await env.DB.prepare(
-    'SELECT tarball_key FROM packages WHERE name = ? AND version = ?'
-  ).bind(name, resolvedVersion).first<{ tarball_key: string }>();
+    'SELECT tarball_key, sha256 FROM packages WHERE name = ? AND version = ?'
+  ).bind(name, resolvedVersion).first<{ tarball_key: string; sha256: string }>();
 
   if (!row) return err(`${name}@${resolvedVersion} not found`, 404);
 
@@ -695,6 +753,7 @@ async function handleDownload(env: Env, name: string, version: string): Promise<
     headers: {
       'Content-Type': 'application/gzip',
       'Content-Disposition': `attachment; filename="${row.tarball_key}"`,
+      ...(row.sha256 ? { 'X-Tarball-SHA256': row.sha256 } : {}),
       ...corsHeaders(),
     },
   });
@@ -703,6 +762,9 @@ async function handleDownload(env: Env, name: string, version: string): Promise<
 async function handleUnpublish(request: Request, env: Env, name: string, version: string): Promise<Response> {
   const token = getToken(request);
   if (!token) return err('Authorization required', 401);
+
+  const { valid } = await validateToken(token, env);
+  if (!valid) return err('Invalid or revoked token', 401);
 
   const row = await env.DB.prepare(
     'SELECT tarball_key FROM packages WHERE name = ? AND version = ?'
@@ -726,6 +788,7 @@ function parsePackageRow(row: Record<string, unknown>) {
     author: row.author as string,
     tags: JSON.parse((row.tags as string) || '[]') as string[],
     tarball_size: row.tarball_size as number,
+    sha256: (row.sha256 as string) || '',
     published_at: row.published_at as string,
   };
 }

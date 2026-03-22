@@ -4,6 +4,7 @@ import ora from 'ora';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import crypto from 'node:crypto';
 import { RegistryClient } from '@cerebrex/registry';
 import { getAuthToken } from './auth.js';
 
@@ -335,7 +336,18 @@ export const installCommand = new Command('install')
     const spinner = ora(`Fetching ${packageName}@${options.ver}...`).start();
 
     try {
+      // Fetch metadata first to get expected SHA-256
+      const meta = await client.getPackage(packageName, options.ver) as { sha256?: string };
+
       const tarball = await client.download(packageName, options.ver);
+
+      // Verify SHA-256 integrity
+      if (meta.sha256) {
+        const actual = crypto.createHash('sha256').update(tarball).digest('hex');
+        if (actual !== meta.sha256) {
+          throw new Error(`Integrity check failed. Expected ${meta.sha256}, got ${actual}`);
+        }
+      }
 
       spinner.text = 'Extracting package...';
       fs.mkdirSync(installDir, { recursive: true });
@@ -344,6 +356,18 @@ export const installCommand = new Command('install')
       fs.writeFileSync(tarPath, tarball);
 
       const { execa } = await import('execa');
+
+      // Zip-slip protection: list entries and reject path traversal
+      const { stdout: listing } = await execa('tar', ['-tzf', tarPath]);
+      const entries = listing.split('\n').filter(Boolean);
+      for (const entry of entries) {
+        const normalized = path.posix.normalize(entry);
+        if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
+          fs.unlinkSync(tarPath);
+          throw new Error(`Security: path traversal detected in tarball entry: ${entry}`);
+        }
+      }
+
       await execa('tar', ['-xzf', tarPath, '-C', installDir]);
       fs.unlinkSync(tarPath);
 

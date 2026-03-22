@@ -62,19 +62,33 @@ interface Task {
 // ── JWT-lite (HMAC-SHA256) ────────────────────────────────────────────────────
 
 function signToken(payload: Record<string, unknown>, secret: string): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT', kid: '1' })).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const enriched = { ...payload, jti: crypto.randomUUID(), nbf: now };
+  const body = Buffer.from(JSON.stringify(enriched)).toString('base64url');
   const sig = crypto.createHmac('sha256', secret).update(`${header}.${body}`).digest('base64url');
   return `${header}.${body}.${sig}`;
 }
 
 function verifyToken(token: string, secret: string): Record<string, unknown> | null {
   try {
-    const [header, body, sig] = token.split('.');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const [header, body, sig] = parts;
+
+    const headerData = JSON.parse(Buffer.from(header, 'base64url').toString('utf-8')) as Record<string, unknown>;
+    if (headerData.alg !== 'HS256' || headerData.typ !== 'JWT') return null;
+
     const expected = crypto.createHmac('sha256', secret).update(`${header}.${body}`).digest('base64url');
-    if (sig !== expected) return null;
+    const sigBuf = Buffer.from(sig, 'base64url');
+    const expBuf = Buffer.from(expected, 'base64url');
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf-8')) as Record<string, unknown>;
-    if (payload.exp && typeof payload.exp === 'number' && Date.now() / 1000 > payload.exp) return null;
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && typeof payload.exp === 'number' && now > payload.exp) return null;
+    if (payload.nbf && typeof payload.nbf === 'number' && now < payload.nbf) return null;
+    if (payload.iat && typeof payload.iat === 'number' && payload.iat > now + 60) return null;
     return payload;
   } catch {
     return null;

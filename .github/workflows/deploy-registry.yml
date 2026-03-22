@@ -1,0 +1,25 @@
+name: Deploy Registry Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/registry/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy cerebrex-registry to Cloudflare
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 8a13d6581e87e8f743a1731a2098d4e3
+          workingDirectory: workers/registry
+          packageManager: npm

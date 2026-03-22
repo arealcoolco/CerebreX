@@ -17,7 +17,7 @@ import { deployCommand, validateCommand, publishCommand, installCommand } from '
 import { memexCommand } from './commands/memex.js';
 import { authCommand } from './commands/auth.js';
 
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
 
 const program = new Command();
 

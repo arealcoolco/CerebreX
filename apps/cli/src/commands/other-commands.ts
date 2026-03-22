@@ -105,12 +105,13 @@ async function runCheck(name: string, fn: () => Promise<CheckResult>): Promise<b
 
 export const validateCommand = new Command('validate')
   .description('Validate your generated MCP server before deploying')
-  .option('-d, --dir <path>', 'Server directory to validate', './cerebrex-output')
+  .argument('[serverPath]', 'Server directory to validate')
+  .option('-d, --dir <path>', 'Server directory to validate (overridden by positional arg)', './cerebrex-output')
   .option('--strict', 'Enable OWASP agentic security checks')
-  .action(async (options) => {
+  .action(async (serverPath, options) => {
     console.log(chalk.cyan('\n✅ Validating MCP server...\n'));
 
-    const serverDir = path.resolve(process.cwd(), options.dir);
+    const serverDir = path.resolve(process.cwd(), serverPath || options.dir);
     const serverFile = path.join(serverDir, 'src', 'server.ts');
     const results: boolean[] = [];
 

@@ -19,9 +19,10 @@ The complete infrastructure layer for AI agents — in one CLI.
 
 ---
 
-> **Status: v0.3.2 — All 6 modules complete and live on npm**
+> **Status: v0.4.0 — Web UI live, all 6 CLI modules on npm**
 > `npm install -g cerebrex` — FORGE, TRACE, MEMEX, AUTH, REGISTRY, and HIVE are all working.
-> Live registry: `https://cerebrex-registry.therealjosefdmcclammey.workers.dev`
+> Registry UI: `https://cerebrex-registry.therealjosefdmcclammey.workers.dev`
+> Trace Explorer: `https://cerebrex-registry.therealjosefdmcclammey.workers.dev/ui/trace`
 
 ---
 
@@ -253,8 +254,8 @@ cd apps/cli && bun run build
 - [x] Web dashboard — Visual trace explorer (`cerebrex trace view --web`) *(v0.3)*
 - [x] Registry backend — Cloudflare Worker + D1 + KV *(v0.3)*
 - [x] HIVE — Multi-agent JWT coordination (init/start/register/status/send) *(v0.3)*
+- [x] Web UI — Registry browser + hosted trace explorer (Worker-embedded) *(v0.4)*
 - [ ] Custom domain — `registry.cerebrex.dev` *(next)*
-- [ ] Web UI — Browser-based registry and trace browser *(v0.4)*
 - [ ] Enterprise tier + on-prem *(v1.0)*
 
 ---

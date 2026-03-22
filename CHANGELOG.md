@@ -6,6 +6,16 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.4.0] — 2026-03-22
+
+### Web UI (New)
+- `GET /` → Registry Browser — search packages, view details, one-click copy install command
+- `GET /ui/trace` → Hosted Trace Explorer — drag-and-drop JSON trace files, full visual timeline
+- Both UIs are self-contained HTML served from the registry Worker — no external assets, no new infra
+- Linked navigation between registry browser and trace explorer
+
+---
+
 ## [0.3.2] — 2026-03-22
 
 ### Fix

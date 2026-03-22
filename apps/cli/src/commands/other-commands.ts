@@ -313,8 +313,7 @@ export const publishCommand = new Command('publish')
       const msg = (err as Error).message;
       console.error(chalk.dim(`  ${msg}`));
       if (/fetch|ECONNREFUSED|ENOTFOUND/.test(msg)) {
-        console.error(chalk.dim('\n  The CerebreX Registry is not yet publicly available.'));
-        console.error(chalk.dim('  Follow https://cerebrex.dev for launch updates.\n'));
+        console.error(chalk.dim('\n  Registry: https://cerebrex-registry.therealjosefdmcclammey.workers.dev\n'));
       }
       process.exit(1);
     }
@@ -357,8 +356,7 @@ export const installCommand = new Command('install')
       const msg = (err as Error).message;
       console.error(chalk.dim(`  ${msg}`));
       if (/fetch|ECONNREFUSED|ENOTFOUND/.test(msg)) {
-        console.error(chalk.dim('\n  The CerebreX Registry is not yet publicly available.'));
-        console.error(chalk.dim('  Follow https://cerebrex.dev for launch updates.\n'));
+        console.error(chalk.dim('\n  Registry: https://cerebrex-registry.therealjosefdmcclammey.workers.dev\n'));
       }
       process.exit(1);
     }

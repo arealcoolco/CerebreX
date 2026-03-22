@@ -27,7 +27,7 @@ const DEFAULTS: CerebreXConfig = {
   telemetry: true,
   defaultTransport: 'streamable-http',
   defaultOutputDir: './cerebrex-output',
-  registryUrl: 'https://registry.cerebrex.dev',
+  registryUrl: 'https://cerebrex-registry.therealjosefdmcclammey.workers.dev',
 };
 
 export function getConfig(): CerebreXConfig {

@@ -45,6 +45,61 @@ export function getAuthToken(): string | null {
 export const authCommand = new Command('auth')
   .description('Authenticate with the CerebreX Registry');
 
+const REGISTRY_URL = 'https://cerebrex-registry.therealjosefdmcclammey.workers.dev';
+
+// cerebrex auth register
+authCommand
+  .command('register')
+  .description('Create a new CerebreX Registry account')
+  .option('--username <username>', 'Username (skips prompt)')
+  .action(async (options) => {
+    console.log(chalk.cyan('\n🔑 CerebreX Registry — Create Account\n'));
+
+    let username: string;
+
+    if (options.username) {
+      username = options.username as string;
+    } else {
+      const { default: inquirer } = await import('inquirer');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const answers = await (inquirer as any).prompt([{
+        type: 'input',
+        name: 'username',
+        message: 'Choose a username (3–30 chars, lowercase, hyphens/underscores ok):',
+        validate: (v: string) => /^[a-z0-9][a-z0-9_-]{1,28}[a-z0-9]$/.test(v.trim())
+          || 'Must be 3–30 lowercase alphanumeric characters, hyphens, or underscores',
+      }]);
+      username = (answers as { username: string }).username.trim();
+    }
+
+    const spinner = (await import('ora')).default(`Creating account for ${chalk.bold(username)}...`).start();
+
+    try {
+      const res = await fetch(`${REGISTRY_URL}/v1/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+
+      const data = await res.json() as { success?: boolean; token?: string; error?: string };
+
+      if (!res.ok || !data.success || !data.token) {
+        spinner.fail(chalk.red(`Registration failed: ${data.error || res.statusText}`));
+        process.exit(1);
+      }
+
+      writeToken(data.token);
+      spinner.succeed(chalk.green(`Account created: ${chalk.bold(username)}`));
+      console.log(chalk.dim(`\n  Token saved to: ${CREDENTIALS_FILE}`));
+      console.log(chalk.dim('  You can now publish packages with: cerebrex publish\n'));
+      console.log(chalk.yellow('  ⚠  Save your token somewhere safe — it cannot be recovered:\n'));
+      console.log(chalk.bold(`  ${data.token}\n`));
+    } catch (e) {
+      spinner.fail(chalk.red(`Network error: ${(e as Error).message}`));
+      process.exit(1);
+    }
+  });
+
 // cerebrex auth login
 authCommand
   .command('login')
@@ -52,7 +107,7 @@ authCommand
   .option('--token <token>', 'Provide token directly (skips prompt)')
   .action(async (options) => {
     console.log(chalk.cyan('\n🔑 CerebreX Registry — Login\n'));
-    console.log(chalk.dim('  Get your token at: https://cerebrex.dev/settings/tokens\n'));
+    console.log(chalk.dim("  Don't have an account? Run: cerebrex auth register\n"));
 
     let token: string;
 

@@ -78,8 +78,9 @@ async function hashBytes(bytes: Uint8Array): Promise<string> {
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 
 const RATE_LIMITS_CONFIG = {
-  publish: { windowMs: 60_000, max: 10 },
-  search:  { windowMs: 60_000, max: 200 },
+  publish:  { windowMs: 60_000,       max: 10  },
+  search:   { windowMs: 60_000,       max: 200 },
+  signup:   { windowMs: 3_600_000,    max: 3   },  // 3 new accounts per IP per hour
 } as const;
 
 type RateLimitAction = keyof typeof RATE_LIMITS_CONFIG;
@@ -138,6 +139,11 @@ export default {
     }
 
     // ── API v1 ─────────────────────────────────────────────────────────────
+
+    // POST /v1/auth/signup      — self-service account creation (open, rate-limited)
+    if (pathname === '/v1/auth/signup' && method === 'POST') {
+      return handleAuthSignup(request, env);
+    }
 
     // POST /v1/auth/register     — create a publish token (admin only)
     if (pathname === '/v1/auth/register' && method === 'POST') {
@@ -645,6 +651,42 @@ async function handleAuthRegister(request: Request, env: Env): Promise<Response>
   ).bind(hash, owner, new Date().toISOString()).run();
 
   return json({ success: true, token: newToken, owner }, 201);
+}
+
+async function handleAuthSignup(request: Request, env: Env): Promise<Response> {
+  if (!await checkRateLimit(request, 'signup', env)) {
+    return err('Rate limit exceeded: max 3 accounts per IP per hour', 429);
+  }
+
+  let body: { username?: string } = {};
+  try { body = await request.json() as { username?: string }; } catch { /* handled below */ }
+
+  const username = (typeof body.username === 'string' ? body.username : '').trim().toLowerCase();
+
+  if (!username) return err('username is required');
+  if (!/^[a-z0-9][a-z0-9_-]{1,28}[a-z0-9]$/.test(username)) {
+    return err('username must be 3–30 lowercase alphanumeric characters, hyphens, or underscores');
+  }
+
+  // Check username not already taken
+  const existing = await env.DB.prepare(
+    'SELECT id FROM tokens WHERE owner = ? LIMIT 1'
+  ).bind(username).first();
+  if (existing) return err(`Username '${username}' is already taken`, 409);
+
+  const newToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+  const hash = await hashToken(newToken);
+
+  await env.DB.prepare(
+    'INSERT INTO tokens (token_hash, owner, created_at) VALUES (?, ?, ?)'
+  ).bind(hash, username, new Date().toISOString()).run();
+
+  return json({
+    success: true,
+    username,
+    token: newToken,
+    message: 'Save this token — it will not be shown again. Run: cerebrex auth login --token <token>',
+  }, 201);
 }
 
 async function handlePublish(request: Request, env: Env): Promise<Response> {

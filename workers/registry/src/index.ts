@@ -262,7 +262,7 @@ function registryUI(): string {
   <div class="logo">CerebreX <span>Registry</span></div>
   <div class="header-links">
     <a href="/ui/trace">Trace Explorer</a>
-    <a href="https://github.com/therealcoolco/cerebrex" target="_blank">GitHub</a>
+    <a href="https://github.com/arealcoolco/CerebreX" target="_blank">GitHub</a>
     <a href="https://www.npmjs.com/package/cerebrex" target="_blank">npm</a>
   </div>
 </header>

@@ -5,15 +5,15 @@
 ### The Open-Source Agent Infrastructure OS
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
-[![CI](https://github.com/therealcoolco/cerebrex/actions/workflows/ci.yml/badge.svg)](https://github.com/therealcoolco/cerebrex/actions/workflows/ci.yml)
+[![CI](https://github.com/arealcoolco/CerebreX/actions/workflows/ci.yml/badge.svg)](https://github.com/arealcoolco/CerebreX/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/cerebrex.svg)](https://www.npmjs.com/package/cerebrex)
-[![GitHub Stars](https://img.shields.io/github/stars/therealcoolco/cerebrex?style=social)](https://github.com/therealcoolco/cerebrex)
-[![Issues](https://img.shields.io/github/issues/therealcoolco/cerebrex)](https://github.com/therealcoolco/cerebrex/issues)
+[![GitHub Stars](https://img.shields.io/github/stars/arealcoolco/CerebreX?style=social)](https://github.com/arealcoolco/CerebreX)
+[![Issues](https://img.shields.io/github/issues/arealcoolco/CerebreX)](https://github.com/arealcoolco/CerebreX/issues)
 
 **Build. Test. Remember. Coordinate. Publish.**
 The complete infrastructure layer for AI agents — in one CLI.
 
-[🚀 Quickstart](#-quickstart) · [🗂 Structure](#-monorepo-structure) · [🛣 Roadmap](#-roadmap) · [🐛 Issues](https://github.com/therealcoolco/cerebrex/issues)
+[🚀 Quickstart](#-quickstart) · [🗂 Structure](#-monorepo-structure) · [🛣 Roadmap](#-roadmap) · [🐛 Issues](https://github.com/arealcoolco/CerebreX/issues)
 
 </div>
 
@@ -56,7 +56,7 @@ cerebrex --help
 Or build from source (requires [Bun](https://bun.sh)):
 
 ```bash
-git clone https://github.com/therealcoolco/cerebrex.git
+git clone https://github.com/arealcoolco/CerebreX.git
 cd CerebreX/cerebrex
 bun install
 cd packages/types && bun run build && cd ../..
@@ -257,7 +257,7 @@ Found a vulnerability? Please read our [Security Policy](./SECURITY.md) and repo
 Contributions are welcome. CerebreX is a solo-built open-source project — PRs, issues, and feedback all help.
 
 ```bash
-git clone https://github.com/therealcoolco/cerebrex.git
+git clone https://github.com/arealcoolco/CerebreX.git
 cd CerebreX/cerebrex
 bun install
 cd packages/types && bun run build && cd ../..

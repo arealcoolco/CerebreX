@@ -1,6 +1,6 @@
 {
   "name": "cerebrex",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "CerebreX CLI — The open-source Agent Infrastructure OS",
   "bin": {
     "cerebrex": "dist/index.js"
@@ -32,10 +32,12 @@
     "directory": "apps/cli"
   },
   "license": "Apache-2.0",
-  "dependencies": {
+  "devDependencies": {
     "@cerebrex/core": "workspace:*",
     "@cerebrex/registry": "workspace:*",
-    "@cerebrex/types": "workspace:*",
+    "@cerebrex/types": "workspace:*"
+  },
+  "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "agents": "^0.7.9",
     "chalk": "^5.6.2",

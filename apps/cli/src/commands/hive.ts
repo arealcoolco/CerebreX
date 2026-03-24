@@ -74,7 +74,7 @@ export function verifyToken(token: string, secret: string): Record<string, unkno
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const [header, body, sig] = parts;
+    const [header, body, sig] = parts as [string, string, string];
 
     const headerData = JSON.parse(Buffer.from(header, 'base64url').toString('utf-8')) as Record<string, unknown>;
     if (headerData.alg !== 'HS256' || headerData.typ !== 'JWT') return null;

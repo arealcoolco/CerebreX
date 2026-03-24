@@ -6,6 +6,34 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.7.1] — 2026-03-24
+
+### Reliability & Doc Accuracy Patch
+
+#### CLI — Auth
+- **`cerebrex auth login` now verifies tokens** — calls `GET /v1/users/me` before saving credentials; fails fast with a clear error if the registry rejects the token. Prevents silent bad-token storage.
+
+#### CLI — Version
+- **VERSION constant synced** — `src/index.ts` banner was hardcoded at `0.6.2`; now correctly reads `0.7.0`.
+
+#### FORGE — Generator
+- **Generated code updated to FORGE v0.7.0** — header comment, User-Agent string, and README links in generated servers now reflect the correct version and URL (`therealcool.site`).
+- **Dependency pins updated** — generated `package.json` now pins `@modelcontextprotocol/sdk ^1.27.1`, `agents ^0.7.9`, `zod ^4.3.6`, `wrangler ^4.0.0` (was `^1.0.0`, `^0.0.1`, `^3.22.0`, `^3.0.0`).
+
+#### CI
+- **Typecheck failures now block CI** — removed `continue-on-error: true` from the Typecheck CLI step. Type errors are build failures.
+
+#### Registry Web UI
+- **FORGE section fixed** — generated command was `cerebrex forge <name> --template <tmpl>` (command does not exist); now correctly generates `cerebrex build --spec <url> --output <dir>`.
+- **FORGE form updated** — inputs now ask for OpenAPI spec URL and output directory instead of server name and template picker.
+- **FORGE feature bullets updated** — now describe what the command actually does (OpenAPI parsing, Zod generation, transport options).
+
+#### Docs
+- **INSTRUCTIONS.md** — corrected command list (`forge` → `build`), fixed `auth login` description (asks for token, not username/email/password), fixed `@arealcoolco/memex-mcp` tool names (`memory_store`, `memory_recall`, `memory_forget`, `memory_list`).
+- **CONTRIBUTING.md** — fixed stale domain (`arealcool.site` → `therealcool.site`), removed reference to `docs.cerebrex.dev`, corrected project structure tree to match actual repo layout, fixed local dev commands.
+
+---
+
 ## [0.7.0] — 2026-03-24
 
 ### All 6 Modules Live — Data Sovereignty Release

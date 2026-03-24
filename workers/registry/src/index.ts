@@ -1090,20 +1090,15 @@ async function registryUI(env: Env): Promise<string> {
     <span class="module-title">FORGE</span>
     <span class="module-badge">live</span>
   </div>
-  <div class="module-desc">scaffold a new MCP server from battle-tested templates. one command, production-ready skeleton.</div>
+  <div class="module-desc">generate a production MCP server from any OpenAPI spec. one command, ready for Cloudflare Workers.</div>
   <div class="forge-form">
     <div>
-      <div style="font-size:10px;letter-spacing:0.1em;color:rgba(255,255,255,0.3);margin-bottom:6px">TOOL NAME</div>
-      <input type="text" id="forge-name" placeholder="my-mcp-server" autocomplete="off"/>
+      <div style="font-size:10px;letter-spacing:0.1em;color:rgba(255,255,255,0.3);margin-bottom:6px">OPENAPI SPEC URL OR PATH</div>
+      <input type="text" id="forge-name" placeholder="https://api.example.com/openapi.json" autocomplete="off"/>
     </div>
     <div>
-      <div style="font-size:10px;letter-spacing:0.1em;color:rgba(255,255,255,0.3);margin-bottom:6px">TEMPLATE</div>
-      <select id="forge-template">
-        <option value="rest-api">rest-api</option>
-        <option value="database">database</option>
-        <option value="filesystem">filesystem</option>
-        <option value="custom">custom</option>
-      </select>
+      <div style="font-size:10px;letter-spacing:0.1em;color:rgba(255,255,255,0.3);margin-bottom:6px">OUTPUT DIR</div>
+      <input type="text" id="forge-template" placeholder="./cerebrex-output" autocomplete="off"/>
     </div>
     <div style="align-self:flex-end">
       <button onclick="generateForgeCmd()">generate command</button>
@@ -1114,11 +1109,11 @@ async function registryUI(env: Env): Promise<string> {
     <button onclick="copyForge(this)">copy</button>
   </div>
   <div class="feature-list">
-    <div class="feature-item">zero-config TypeScript setup with strict mode and path aliases</div>
+    <div class="feature-item">parses OpenAPI 3.x and Swagger 2.x specs from URL or local file</div>
+    <div class="feature-item">generates Zod validation for every tool parameter automatically</div>
     <div class="feature-item">wrangler.toml pre-configured for Cloudflare Workers deployment</div>
-    <div class="feature-item">MCP protocol handler boilerplate with tool, resource, and prompt stubs</div>
-    <div class="feature-item">integrated test runner with example tool call fixtures</div>
-    <div class="feature-item">one-command publish to cerebrex registry on first push</div>
+    <div class="feature-item">supports stdio, SSE, and Streamable HTTP transports</div>
+    <div class="feature-item">ready for <code style="font-size:11px">cerebrex validate</code> and <code style="font-size:11px">cerebrex publish</code></div>
   </div>
 </div>
 </section>
@@ -1494,9 +1489,9 @@ function copyText(txt, btn) {
 
 // ── FORGE ────────────────────────────────────────────────────────────────────
 function generateForgeCmd() {
-  var name = document.getElementById('forge-name').value.trim() || 'my-mcp-server';
-  var tmpl = document.getElementById('forge-template').value;
-  var cmd = 'cerebrex forge ' + name + ' --template ' + tmpl;
+  var spec = document.getElementById('forge-name').value.trim() || 'https://api.example.com/openapi.json';
+  var out = document.getElementById('forge-template').value.trim() || './cerebrex-output';
+  var cmd = 'cerebrex build --spec ' + spec + ' --output ' + out;
   document.getElementById('forge-cmd-text').textContent = cmd;
   document.getElementById('forge-output').classList.add('show');
 }

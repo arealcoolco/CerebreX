@@ -19,7 +19,7 @@ The complete infrastructure layer for AI agents — in one CLI.
 
 ---
 
-> **Status: v0.7.0 — All 6 modules live, 8 official MCP packages, HIVE cloud API, data sovereignty manifesto**
+> **Status: v0.7.1 — reliability + doc accuracy patch; all 6 modules live, 8 official MCP packages**
 > `npm install -g cerebrex` — FORGE, TRACE, MEMEX, AUTH, REGISTRY, and HIVE are all working.
 >
 > **Live:** Registry UI → `https://registry.therealcool.site`

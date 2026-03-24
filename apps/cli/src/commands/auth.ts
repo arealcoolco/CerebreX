@@ -125,25 +125,22 @@ authCommand
       token = (answers as { token: string }).token;
     }
 
-    const spinner = (await import('ora')).default('Verifying token with registry...').start();
+    const spinner = (await import('ora')).default('Verifying token...').start();
     try {
-      const res = await fetch(`${REGISTRY_URL}/v1/auth/me`, {
+      const res = await fetch(`${REGISTRY_URL}/v1/users/me`, {
         headers: { Authorization: `Bearer ${token.trim()}` },
       });
       if (!res.ok) {
-        spinner.fail(chalk.red(`Token verification failed: ${res.statusText}`));
-        console.log(chalk.dim('  Check your token and try again.\n'));
+        spinner.fail(chalk.red(`Token rejected by registry (${res.status}). Check your token and try again.`));
         process.exit(1);
       }
-      spinner.succeed(chalk.green('Token verified'));
+      const data = await res.json() as { username?: string };
+      writeToken(token.trim());
+      spinner.succeed(chalk.green(`Logged in as ${chalk.bold(data.username ?? 'unknown')}`));
     } catch (e) {
-      spinner.fail(chalk.red(`Could not reach registry: ${(e as Error).message}`));
-      console.log(chalk.dim('  Check your network connection and try again.\n'));
+      spinner.fail(chalk.red(`Could not verify token: ${(e as Error).message}`));
       process.exit(1);
     }
-
-    writeToken(token.trim());
-    console.log(chalk.green('  ✅ Logged in successfully'));
     console.log(chalk.dim(`  Credentials saved to: ${CREDENTIALS_FILE}`));
     console.log(chalk.dim('  Run: cerebrex publish --dir ./cerebrex-output\n'));
   });

@@ -96,7 +96,7 @@ export class ${this.toPascalCase(serverName || spec.title)}Server extends McpAge
         method,
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'CerebreX-MCP/0.7.0',
+          'User-Agent': 'CerebreX-FORGE/0.7.1',
           // 'Authorization': \`Bearer \${this.env.API_KEY}\`,
         },
         ...(body && method !== 'GET' ? { body: JSON.stringify(body) } : {}),
@@ -269,7 +269,7 @@ name = "${name}-mcp-production"
       devDependencies: {
         '@cloudflare/workers-types': '^4.0.0',
         'typescript': '^5.4.0',
-        'wrangler': '^3.0.0',
+        'wrangler': '^4.0.0',
       },
       private: true,
     };

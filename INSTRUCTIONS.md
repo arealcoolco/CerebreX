@@ -20,7 +20,7 @@ npm install -g cerebrex
 cerebrex --help
 ```
 
-You should see all 6 commands: `forge`, `trace`, `memex`, `auth`, `hive`, `publish`.
+You should see all 6 commands: `build`, `trace`, `memex`, `auth`, `hive`, `publish`.
 
 ---
 
@@ -28,11 +28,17 @@ You should see all 6 commands: `forge`, `trace`, `memex`, `auth`, `hive`, `publi
 
 The CerebreX registry is live at [registry.therealcool.site](https://registry.therealcool.site).
 
-**Sign up:**
+**Sign up for an account:**
+```bash
+cerebrex auth register
+# choose a username — a token is issued and saved automatically
+```
+
+**Already have a token? Log in:**
 ```bash
 cerebrex auth login
-# follow the prompts — enter a username, email, and password
-# your token is stored at ~/.cerebrex/.credentials (mode 0600)
+# paste your token when prompted — verified against the registry before saving
+# stored at ~/.cerebrex/.credentials (mode 0600)
 ```
 
 **Check your status:**
@@ -222,7 +228,7 @@ Open [registry.therealcool.site](https://registry.therealcool.site) in a browser
 
 | Package | Tools | Requires |
 |---------|-------|---------|
-| `@arealcoolco/memex-mcp` | `memex_store`, `memex_recall`, `memex_delete`, `memex_list` | `CEREBREX_TOKEN` |
+| `@arealcoolco/memex-mcp` | `memory_store`, `memory_recall`, `memory_forget`, `memory_list` | `CEREBREX_TOKEN` |
 | `@arealcoolco/hive-mcp` | `hive_list`, `hive_create`, `hive_get`, `hive_update`, `hive_delete` | `CEREBREX_TOKEN` |
 | `@arealcoolco/fetch-mcp` | `http_get`, `http_post`, `http_request` | none |
 | `@arealcoolco/datetime-mcp` | `datetime_now`, `datetime_convert`, `datetime_diff`, `datetime_format` | none |

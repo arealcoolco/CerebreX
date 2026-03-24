@@ -73,8 +73,8 @@ bun run lint
 # Type-check all packages
 bun run typecheck
 
-# Run the CLI locally (from the repo root)
-bun run cli -- build --spec ./examples/petstore.json
+# Run the CLI locally (from apps/cli)
+cd apps/cli && bun run dev -- build --spec ./examples/petstore.json
 ```
 
 ### Working on a Specific Package
@@ -94,19 +94,21 @@ bun run test:watch
 ## Project Structure
 
 ```
-cerebrex/
+CerebreX/
 ├── apps/
 │   ├── cli/              # The cerebrex CLI tool (this is what users install)
 │   │   ├── src/
 │   │   │   ├── commands/ # One file per CLI command
-│   │   │   ├── core/     # FORGE and TRACE engines
-│   │   │   └── utils/    # Shared CLI utilities
-│   │   └── templates/    # Cloudflare Worker templates
-│   └── docs/             # Documentation site
+│   │   │   └── core/     # FORGE, TRACE, and MEMEX engines
+│   │   └── dist/         # Built output (git-ignored)
+│   └── dashboard/        # Standalone trace explorer HTML
 ├── packages/
 │   ├── core/             # Shared core utilities
 │   ├── types/            # TypeScript type definitions
-│   └── registry-client/  # Registry API client
+│   ├── registry-client/  # Registry API client
+│   └── */                # Official MCP packages (memex-mcp, hive-mcp, etc.)
+├── workers/
+│   └── registry/         # Cloudflare Worker — live registry backend + Web UI
 └── .github/              # GitHub Actions, templates
 ```
 
@@ -174,8 +176,8 @@ bun run test
 bun run test --filter=./apps/cli
 
 # Test the CLI end-to-end locally
-bun run cli -- build --spec ./examples/stripe-openapi.json
-bun run cli -- validate
+cd apps/cli && bun run dev -- build --spec ./examples/stripe-openapi.json
+cd apps/cli && bun run dev -- validate
 ```
 
 ---
@@ -262,7 +264,7 @@ Please include:
 Use the [Feature Request template](./.github/ISSUE_TEMPLATE/feature_request.md).
 
 Before suggesting:
-- Check the [roadmap](https://docs.cerebrex.dev/roadmap)
+- Check the [roadmap](https://github.com/arealcoolco/CerebreX#-roadmap)
 - Search existing feature request issues
 - Describe the problem you're solving, not just the solution
 
@@ -282,4 +284,4 @@ All contributors are listed in our [CONTRIBUTORS.md](./CONTRIBUTORS.md) and reco
 
 ---
 
-*Built with love by [A Real Cool Co.](https://arealcool.site)*
+*Built with love by [A Real Cool Co.](https://therealcool.site)*

@@ -14,14 +14,11 @@
     },
     "apps/cli": {
       "name": "cerebrex",
-      "version": "0.3.1",
+      "version": "0.6.2",
       "bin": {
         "cerebrex": "dist/index.js",
       },
       "dependencies": {
-        "@cerebrex/core": "workspace:*",
-        "@cerebrex/registry": "workspace:*",
-        "@cerebrex/types": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.27.1",
         "agents": "^0.7.9",
         "chalk": "^5.6.2",
@@ -31,6 +28,11 @@
         "ora": "^9.3.0",
         "yaml": "^2.8.3",
         "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "@cerebrex/core": "workspace:*",
+        "@cerebrex/registry": "workspace:*",
+        "@cerebrex/types": "workspace:*",
       },
     },
     "packages/core": {
@@ -42,6 +44,56 @@
       "devDependencies": {
         "@types/node": "^20.0.0",
         "typescript": "^5.4.0",
+      },
+    },
+    "packages/datetime-mcp": {
+      "name": "@arealcoolco/datetime-mcp",
+      "version": "1.0.0",
+      "bin": {
+        "datetime-mcp": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.27.1",
+      },
+    },
+    "packages/fetch-mcp": {
+      "name": "@arealcoolco/fetch-mcp",
+      "version": "1.0.0",
+      "bin": {
+        "fetch-mcp": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.27.1",
+      },
+    },
+    "packages/hive-mcp": {
+      "name": "@arealcoolco/hive-mcp",
+      "version": "1.0.0",
+      "bin": {
+        "hive-mcp": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.27.1",
+      },
+    },
+    "packages/kvstore-mcp": {
+      "name": "@arealcoolco/kvstore-mcp",
+      "version": "1.0.0",
+      "bin": {
+        "kvstore-mcp": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.27.1",
+      },
+    },
+    "packages/memex-mcp": {
+      "name": "@arealcoolco/memex-mcp",
+      "version": "1.0.0",
+      "bin": {
+        "memex-mcp": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.27.1",
       },
     },
     "packages/registry-client": {
@@ -73,6 +125,16 @@
     "@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@4.0.21", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@standard-schema/spec": "^1.1.0", "eventsource-parser": "^3.0.6" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-MtFUYI1/8mgDvRmaBDjbLJPFFrMG777AvSgyIFQtZHIMzm88R/12vYBBpnk7pfiWLFE1DSZzY4WDYzGbKAcmiw=="],
 
     "@apidevtools/json-schema-ref-parser": ["@apidevtools/json-schema-ref-parser@11.9.3", "", { "dependencies": { "@jsdevtools/ono": "^7.1.3", "@types/json-schema": "^7.0.15", "js-yaml": "^4.1.0" } }, "sha512-60vepv88RwcJtSHrD6MjIL6Ta3SOYbgfnkHb+ppAVK+o9mXprRtulx7VlRl3lN3bbvysAfCS7WMVfhUYemB0IQ=="],
+
+    "@arealcoolco/datetime-mcp": ["@arealcoolco/datetime-mcp@workspace:packages/datetime-mcp"],
+
+    "@arealcoolco/fetch-mcp": ["@arealcoolco/fetch-mcp@workspace:packages/fetch-mcp"],
+
+    "@arealcoolco/hive-mcp": ["@arealcoolco/hive-mcp@workspace:packages/hive-mcp"],
+
+    "@arealcoolco/kvstore-mcp": ["@arealcoolco/kvstore-mcp@workspace:packages/kvstore-mcp"],
+
+    "@arealcoolco/memex-mcp": ["@arealcoolco/memex-mcp@workspace:packages/memex-mcp"],
 
     "@babel/runtime": ["@babel/runtime@7.29.2", "", {}, "sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g=="],
 

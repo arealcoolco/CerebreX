@@ -284,10 +284,12 @@ hiveCommand
         });
       }
 
-      // GET /tasks — list tasks (optionally filter by agent)
+      // GET /tasks — list tasks (filter by agent_id and/or status)
       if (url.pathname === '/tasks' && method === 'GET') {
         const agentId = url.searchParams.get('agent_id');
-        const tasks = agentId ? state.tasks.filter((t) => t.agent_id === agentId) : state.tasks;
+        const statusFilter = url.searchParams.get('status');
+        let tasks = agentId ? state.tasks.filter((t) => t.agent_id === agentId) : state.tasks;
+        if (statusFilter) tasks = tasks.filter((t) => t.status === statusFilter);
         return sendJson({ tasks });
       }
 
@@ -301,6 +303,10 @@ hiveCommand
           if (idx === -1) return sendJson({ error: 'Task not found' }, 404);
           const update = body as Partial<Task>;
           state.tasks[idx] = { ...state.tasks[idx], ...update };
+          if (update.status === 'running') {
+            const agent = state.agents.find((a) => a.id === state.tasks[idx].agent_id);
+            if (agent) { agent.status = 'busy'; agent.last_seen = new Date().toISOString(); }
+          }
           if (update.status === 'completed' || update.status === 'failed') {
             state.tasks[idx].completed_at = new Date().toISOString();
             const agent = state.agents.find((a) => a.id === state.tasks[idx].agent_id);
@@ -494,4 +500,255 @@ hiveCommand
       console.error(chalk.dim(`  ${(e as Error).message}\n`));
       process.exit(1);
     }
+  });
+
+// ── Built-in task executor ────────────────────────────────────────────────────
+
+type ExecuteHandler = (task: Task) => Promise<unknown>;
+
+async function builtinExecute(task: Task): Promise<unknown> {
+  const p = (task.payload ?? {}) as Record<string, unknown>;
+
+  switch (task.type) {
+    case 'noop':
+      return { completed: true };
+
+    case 'echo':
+      return task.payload;
+
+    case 'fetch': {
+      const { url, method = 'GET', headers, body } = p as {
+        url?: string; method?: string;
+        headers?: Record<string, string>; body?: unknown;
+      };
+      if (!url) throw new Error('fetch task requires payload.url');
+      const res = await fetch(url, {
+        method: (method as string).toUpperCase(),
+        headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
+        ...(body !== undefined && method !== 'GET' ? { body: JSON.stringify(body) } : {}),
+      });
+      const ct = res.headers.get('content-type') ?? '';
+      const responseBody = ct.includes('application/json') ? await res.json() : await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${typeof responseBody === 'string' ? responseBody.slice(0, 200) : JSON.stringify(responseBody).slice(0, 200)}`);
+      return { status: res.status, body: responseBody };
+    }
+
+    case 'memex-set': {
+      const { MemexEngine } = await import('../core/memex/engine.js');
+      const { key, value, namespace = 'default', ttl } = p as {
+        key?: string; value?: unknown; namespace?: string; ttl?: number;
+      };
+      if (!key) throw new Error('memex-set requires payload.key');
+      const engine = new MemexEngine();
+      engine.set(key, value, { namespace, ttlSeconds: ttl });
+      return { stored: true, key, namespace };
+    }
+
+    case 'memex-get': {
+      const { MemexEngine } = await import('../core/memex/engine.js');
+      const { key, namespace = 'default' } = p as { key?: string; namespace?: string };
+      if (!key) throw new Error('memex-get requires payload.key');
+      const engine = new MemexEngine();
+      const entry = engine.get(key, namespace);
+      return entry ? { found: true, key, namespace, value: entry.value } : { found: false, key, namespace };
+    }
+
+    default:
+      throw new Error(
+        `No built-in handler for task type "${task.type}". ` +
+        `Built-in types: noop, echo, fetch, memex-set, memex-get. ` +
+        `Provide a custom handler with --handler <file>.`
+      );
+  }
+}
+
+// ── TRACE step emitter ────────────────────────────────────────────────────────
+
+async function emitTraceStep(
+  port: number,
+  session: string,
+  step: { type: string; toolName: string; inputs: unknown; latencyMs: number; output?: unknown; error?: string }
+): Promise<void> {
+  try {
+    await fetch(`http://localhost:${port}/step`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-session-id': session },
+      body: JSON.stringify(step),
+      signal: AbortSignal.timeout(1000),
+    });
+  } catch {
+    // TRACE emission is best-effort — never block the worker
+  }
+}
+
+// ── hive worker ───────────────────────────────────────────────────────────────
+
+hiveCommand
+  .command('worker')
+  .description('Start a worker that polls for tasks and executes them')
+  .requiredOption('-i, --id <agentId>', 'Agent ID (must match a registered agent)')
+  .requiredOption('--token <jwt>', 'JWT token (from cerebrex hive register)')
+  .option('--handler <file>', 'Path to a JS module exporting: export async function execute(task) {}')
+  .option('--hive-url <url>', 'HIVE coordinator URL', 'http://localhost:7433')
+  .option('--poll-interval <ms>', 'How often to poll for new tasks (ms)', '2000')
+  .option('--concurrency <n>', 'Max tasks to run in parallel', '1')
+  .option('--trace-port <port>', 'TRACE server port to emit steps to')
+  .option('--trace-session <id>', 'TRACE session ID to attach steps to')
+  .action(async (options) => {
+    const agentId: string = options.id;
+    const hiveUrl: string = options.hiveUrl;
+    const token: string = options.token;
+    const pollIntervalMs = parseInt(options.pollInterval, 10);
+    const maxConcurrency = parseInt(options.concurrency, 10);
+    const tracePort = options.tracePort ? parseInt(options.tracePort, 10) : null;
+    const traceSession: string | null = options.traceSession ?? null;
+
+    // ── Load handler ──────────────────────────────────────────────────────────
+    let execute: ExecuteHandler;
+
+    if (options.handler) {
+      const handlerPath = path.resolve(process.cwd(), options.handler as string);
+      if (!fs.existsSync(handlerPath)) {
+        console.error(chalk.red(`\n  Handler not found: ${handlerPath}\n`));
+        process.exit(1);
+      }
+      try {
+        const mod = await import(handlerPath) as { execute?: ExecuteHandler };
+        if (typeof mod.execute !== 'function') {
+          console.error(chalk.red('\n  Handler must export: export async function execute(task) { ... }\n'));
+          process.exit(1);
+        }
+        execute = mod.execute;
+      } catch (e) {
+        console.error(chalk.red(`\n  Failed to load handler: ${(e as Error).message}\n`));
+        process.exit(1);
+      }
+    } else {
+      execute = builtinExecute;
+    }
+
+    // ── Verify connection ─────────────────────────────────────────────────────
+    try {
+      const res = await fetch(`${hiveUrl}/health`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const health = await res.json() as { hive: string };
+      console.log(chalk.cyan(`\n  🐝 HIVE Worker`));
+      console.log(chalk.dim(`  Agent:       ${agentId}`));
+      console.log(chalk.dim(`  HIVE:        ${chalk.white(health.hive)} (${hiveUrl})`));
+      console.log(chalk.dim(`  Handler:     ${options.handler ? path.basename(options.handler as string) : 'built-in'}`));
+      console.log(chalk.dim(`  Poll:        every ${pollIntervalMs}ms`));
+      console.log(chalk.dim(`  Concurrency: ${maxConcurrency}`));
+      if (tracePort && traceSession) {
+        console.log(chalk.dim(`  Trace:       :${tracePort} / session=${traceSession}`));
+      }
+      console.log(chalk.dim('\n  Waiting for tasks... (Ctrl+C to stop)\n'));
+    } catch (e) {
+      console.error(chalk.red(`\n  Cannot reach HIVE at ${hiveUrl}: ${(e as Error).message}`));
+      console.error(chalk.dim('  Start the coordinator first: cerebrex hive start\n'));
+      process.exit(1);
+    }
+
+    // ── Worker loop ───────────────────────────────────────────────────────────
+    let inFlight = 0;
+    let running = true;
+
+    const processTask = async (task: Task): Promise<void> => {
+      inFlight++;
+      const start = Date.now();
+
+      // Claim the task — marks it running so other workers skip it
+      try {
+        const claimRes = await fetch(`${hiveUrl}/tasks/${task.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: 'running' }),
+        });
+        if (!claimRes.ok) { inFlight--; return; }
+      } catch { inFlight--; return; }
+
+      const payloadPreview = JSON.stringify(task.payload).slice(0, 60);
+      console.log(`  ${chalk.yellow('→')} ${chalk.bold(task.type)} ${chalk.dim(task.id.slice(0, 8))} ${chalk.dim(payloadPreview)}`);
+
+      let result: unknown;
+      let taskError: string | undefined;
+
+      try {
+        result = await execute(task);
+        const ms = Date.now() - start;
+        console.log(`  ${chalk.green('✓')} ${chalk.bold(task.type)} ${chalk.dim(`${ms}ms`)}`);
+
+        if (tracePort && traceSession) {
+          await emitTraceStep(tracePort, traceSession, {
+            type: 'tool_call',
+            toolName: `hive:${agentId}:${task.type}`,
+            inputs: task.payload,
+            latencyMs: ms,
+            output: result,
+          });
+        }
+      } catch (e) {
+        taskError = (e as Error).message;
+        const ms = Date.now() - start;
+        console.log(`  ${chalk.red('✗')} ${chalk.bold(task.type)} ${chalk.red(taskError)} ${chalk.dim(`${ms}ms`)}`);
+
+        if (tracePort && traceSession) {
+          await emitTraceStep(tracePort, traceSession, {
+            type: 'error',
+            toolName: `hive:${agentId}:${task.type}`,
+            inputs: task.payload,
+            latencyMs: ms,
+            error: taskError,
+          });
+        }
+      }
+
+      // Report result back to coordinator
+      try {
+        await fetch(`${hiveUrl}/tasks/${task.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(
+            taskError
+              ? { status: 'failed', error: taskError }
+              : { status: 'completed', result }
+          ),
+        });
+      } catch {
+        // Best-effort — coordinator may have restarted
+      }
+
+      inFlight--;
+    };
+
+    const poll = async (): Promise<void> => {
+      if (inFlight >= maxConcurrency) return;
+      try {
+        const res = await fetch(
+          `${hiveUrl}/tasks?agent_id=${encodeURIComponent(agentId)}&status=queued`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) return;
+        const { tasks } = await res.json() as { tasks: Task[] };
+
+        for (const task of tasks) {
+          if (inFlight >= maxConcurrency) break;
+          void processTask(task);
+        }
+      } catch {
+        // Coordinator unreachable — will retry on next interval
+      }
+    };
+
+    void poll();
+    const intervalId = setInterval(() => { if (running) void poll(); }, pollIntervalMs);
+
+    process.on('SIGINT', () => {
+      running = false;
+      clearInterval(intervalId);
+      console.log(chalk.dim('\n  Worker shutting down...\n'));
+      process.exit(0);
+    });
+
+    // Keep process alive until SIGINT
+    await new Promise<never>(() => {});
   });

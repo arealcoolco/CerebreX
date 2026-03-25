@@ -49,3 +49,4 @@ packages/*/src/**/*.d.ts.map
 # Temporary publish assets (copied by CI)
 apps/cli/README.md
 apps/cli/LICENSE
+.env.deploy

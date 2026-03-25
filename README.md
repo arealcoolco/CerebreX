@@ -19,7 +19,7 @@ The complete infrastructure layer for AI agents — in one CLI.
 
 ---
 
-> **Status: v0.7.1 — reliability + doc accuracy patch; all 6 modules live, 8 official MCP packages**
+> **Status: v0.7.2 — HIVE workers live; tasks now actually execute**
 > `npm install -g cerebrex` — FORGE, TRACE, MEMEX, AUTH, REGISTRY, and HIVE are all working.
 >
 > **Live:** Registry UI → `https://registry.therealcool.site`
@@ -173,24 +173,62 @@ cerebrex install my-mcp-server                  # install from registry
 ## 🐝 HIVE — Multi-Agent Coordination
 
 ```bash
-# Initialize a HIVE coordinator
+# 1 — Initialize and start the coordinator
 cerebrex hive init --name my-hive
+cerebrex hive start                     # runs on port 7433
 
-# Start the coordinator (runs on port 7433)
-cerebrex hive start
+# 2 — Register agents and get JWTs
+cerebrex hive register --id researcher --name "Researcher" --capabilities search,fetch
+cerebrex hive register --id writer     --name "Writer"     --capabilities write,summarize
 
-# In another terminal — register an agent and get a JWT
-cerebrex hive register --id agent-1 --name "Summarizer" --capabilities summarize,classify
+# 3 — Start workers (each in its own terminal — they poll and execute automatically)
+cerebrex hive worker --id researcher --token <JWT>
+cerebrex hive worker --id writer     --token <JWT> --handler ./writer-handler.mjs
 
-# Check who's connected
+# 4 — Send tasks — workers pick them up and execute
+cerebrex hive send --agent researcher --type fetch    --payload '{"url":"https://api.example.com/data"}' --token <JWT>
+cerebrex hive send --agent writer     --type memex-get --payload '{"key":"research-results"}' --token <JWT>
+
+# 5 — Watch it live
 cerebrex hive status
+```
 
-# Send a task to an agent (use the JWT printed by register)
-cerebrex hive send --agent agent-1 --type summarize --payload '{"text":"..."}' --token <JWT>
+**Built-in task types** (no `--handler` file required):
+
+| Type | Payload | What it does |
+|------|---------|-------------|
+| `fetch` | `{ url, method?, headers?, body? }` | Makes an HTTP request |
+| `memex-set` | `{ key, value, namespace?, ttl? }` | Writes to local MEMEX |
+| `memex-get` | `{ key, namespace? }` | Reads from local MEMEX |
+| `echo` | anything | Returns payload as result |
+| `noop` | anything | Completes immediately |
+
+**Custom handlers** — drop in a JS module when you need more:
+
+```js
+// researcher-handler.mjs
+export async function execute(task) {
+  if (task.type === 'search') {
+    const res = await fetch(`https://api.example.com/search?q=${task.payload.query}`);
+    return { results: await res.json() };
+  }
+  throw new Error(`Unknown task type: ${task.type}`);
+}
+```
+
+```bash
+cerebrex hive worker --id researcher --token <JWT> --handler ./researcher-handler.mjs
+```
+
+**With TRACE observability** — every task shows up in the visual dashboard:
+
+```bash
+cerebrex trace start --session my-run
+cerebrex hive worker --id researcher --token <JWT> --trace-port 7432 --trace-session my-run
+cerebrex trace view --session my-run --web
 ```
 
 HIVE runs a local HTTP coordinator with JWT-signed agent authentication.
-Agents register, receive tasks, and report results back via the REST API.
 State is persisted to `~/.cerebrex/hive/state.json`.
 
 ---
@@ -286,8 +324,12 @@ cd apps/cli && bun run build
 - [x] 8 official MCP packages — memex, hive, fetch, datetime, kvstore, github, nasa, openweathermap *(v0.7)*
 - [x] Token self-service — `POST /v1/auth/tokens` — users can create scoped tokens *(v0.7)*
 - [x] Rate limiting — per-IP + per-token write limits on MEMEX + HIVE *(v0.7)*
-- [ ] Custom domain — `registry.cerebrex.dev` *(next)*
+- [x] HIVE worker — `cerebrex hive worker` — agents that poll, execute, and report back *(v0.7.2)*
+- [x] Built-in task handlers — fetch, memex-set, memex-get, echo, noop *(v0.7.2)*
+- [x] Custom handler modules — `--handler ./my-handler.mjs` for domain-specific logic *(v0.7.2)*
+- [x] TRACE + HIVE integration — `--trace-port` + `--trace-session` on workers *(v0.7.2)*
 - [ ] Agent test runner — `cerebrex test` with replay + assertions *(v0.8)*
+- [ ] Custom domain — `registry.cerebrex.dev` *(next)*
 - [ ] Enterprise tier + on-prem *(v1.0)*
 
 ---

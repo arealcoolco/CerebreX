@@ -119,6 +119,8 @@ Then:
 
 ## 6 — Test HIVE (Multi-Agent Coordination)
 
+### Basic coordinator flow
+
 ```bash
 # initialize a local coordinator
 cerebrex hive init --name my-first-hive
@@ -126,18 +128,104 @@ cerebrex hive init --name my-first-hive
 # start it (runs on port 7433)
 cerebrex hive start &
 
-# register agents
+# register agents — each prints a JWT token
 cerebrex hive register --id researcher --name "Researcher" --capabilities search,read
+# → JWT: eyJ...   ← save this
+
 cerebrex hive register --id writer --name "Writer" --capabilities write,edit
+# → JWT: eyJ...   ← save this
 
 # check status
 cerebrex hive status
 
-# send a task (use the JWT printed by register)
-cerebrex hive send --agent researcher --type search --payload '{"query":"AI infrastructure"}' --token <JWT>
-
-# stop the coordinator
+# stop the coordinator when done
 cerebrex hive stop
+```
+
+### Worker pattern — tasks that actually execute
+
+Workers are long-running processes that poll for tasks, execute them, and report results back.
+
+**Terminal 1 — start coordinator:**
+```bash
+cerebrex hive start
+```
+
+**Terminal 2 — start researcher worker:**
+```bash
+cerebrex hive worker --id researcher --token <RESEARCHER_JWT>
+# Worker is now polling for tasks every 2 seconds
+```
+
+**Terminal 3 — start writer worker with custom handler:**
+```bash
+# writer-handler.mjs
+cat > writer-handler.mjs << 'EOF'
+export async function execute(task) {
+  if (task.type === 'summarize') {
+    return { summary: `Summary of: ${JSON.stringify(task.payload)}` };
+  }
+  throw new Error(`Unknown task type: ${task.type}`);
+}
+EOF
+
+cerebrex hive worker --id writer --token <WRITER_JWT> --handler ./writer-handler.mjs
+```
+
+**Terminal 4 — send tasks and watch them execute:**
+```bash
+# built-in task types (no handler needed)
+cerebrex hive send --agent researcher --type fetch \
+  --payload '{"url":"https://httpbin.org/json"}' \
+  --token <RESEARCHER_JWT>
+
+cerebrex hive send --agent researcher --type memex-set \
+  --payload '{"key":"research-result","value":"AI is great","namespace":"demo"}' \
+  --token <RESEARCHER_JWT>
+
+cerebrex hive send --agent researcher --type memex-get \
+  --payload '{"key":"research-result","namespace":"demo"}' \
+  --token <RESEARCHER_JWT>
+
+cerebrex hive send --agent researcher --type echo \
+  --payload '{"hello":"world"}' \
+  --token <RESEARCHER_JWT>
+
+# custom task types (handled by --handler module)
+cerebrex hive send --agent writer --type summarize \
+  --payload '{"topic":"agent infrastructure"}' \
+  --token <WRITER_JWT>
+
+# watch results update in real time
+cerebrex hive status
+```
+
+### Built-in task types
+
+| Type | Required payload | What it does |
+|------|-----------------|--------------|
+| `noop` | anything | Completes immediately |
+| `echo` | anything | Returns payload as result |
+| `fetch` | `{ url, method?, headers?, body? }` | Makes an HTTP request |
+| `memex-set` | `{ key, value, namespace?, ttl? }` | Writes to local MEMEX |
+| `memex-get` | `{ key, namespace? }` | Reads from local MEMEX |
+
+### Full HIVE + TRACE observability
+
+```bash
+# start trace first
+cerebrex trace start --session hive-demo
+
+# start workers with trace integration
+cerebrex hive worker --id researcher --token <JWT> \
+  --trace-port 7432 --trace-session hive-demo
+
+# send tasks — each execution appears in the timeline
+cerebrex hive send --agent researcher --type fetch \
+  --payload '{"url":"https://httpbin.org/uuid"}' --token <JWT>
+
+# view live in browser
+cerebrex trace view --session hive-demo --web
 ```
 
 **Test cloud HIVE via MCP:**

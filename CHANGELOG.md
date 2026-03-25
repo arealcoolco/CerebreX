@@ -6,6 +6,40 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.7.2] — 2026-03-24
+
+### HIVE Worker — Tasks Now Actually Execute
+
+#### HIVE — Worker Command (New)
+- **`cerebrex hive worker`** — new subcommand; starts a long-running agent process that polls the coordinator, claims queued tasks, executes them, and reports results back. Keeps running until interrupted.
+- **`--id <agentId>`** — agent ID (must match a registered agent)
+- **`--token <jwt>`** — JWT from `cerebrex hive register`
+- **`--handler <file>`** — optional path to a `.mjs` module exporting `async function execute(task)` for custom task types
+- **`--poll-interval <ms>`** — how often to poll for tasks (default 2000ms)
+- **`--concurrency <n>`** — max tasks to run in parallel (default 1)
+- **`--trace-port <port>` + `--trace-session <id>`** — emit each task execution as a TRACE step for full observability
+
+#### HIVE — Built-in Task Handlers (New)
+Workers handle these task types with no `--handler` file required:
+- **`noop`** — completes immediately
+- **`echo`** — returns payload as result
+- **`fetch`** — makes an HTTP request (`{ url, method?, headers?, body? }`)
+- **`memex-set`** — writes to local MEMEX (`{ key, value, namespace?, ttl? }`)
+- **`memex-get`** — reads from local MEMEX (`{ key, namespace? }`)
+
+#### HIVE — Coordinator Patches
+- **`GET /tasks?status=<status>`** — added `status` query filter; workers use `?status=queued` to efficiently poll only actionable tasks
+- **Agent `busy` state** — when a worker claims a task (`PATCH { status: 'running' }`), the owning agent is automatically marked `busy`; reverts to `idle` on completion/failure
+
+#### TRACE + HIVE Integration
+- Workers optionally emit a TRACE step for every task execution (start time, result, latency, errors) — the whole multi-agent run appears as a unified visual timeline in the dashboard
+
+#### Docs
+- **README.md** — rewrote HIVE section with complete worker flow, built-in task types table, custom handler example, TRACE integration example; roadmap updated with 4 new v0.7.2 checkmarks
+- **INSTRUCTIONS.md** — expanded HIVE section with worker pattern, all built-in task types, full HIVE + TRACE observability walkthrough
+
+---
+
 ## [0.7.1] — 2026-03-24
 
 ### Reliability & Doc Accuracy Patch

@@ -14,7 +14,7 @@
     },
     "apps/cli": {
       "name": "cerebrex",
-      "version": "0.8.0",
+      "version": "0.9.1",
       "bin": {
         "cerebrex": "dist/index.js",
       },
@@ -109,6 +109,13 @@
         "typescript": "^5.4.0",
       },
     },
+    "packages/system-prompt": {
+      "name": "@cerebrex/system-prompt",
+      "version": "0.9.0",
+      "devDependencies": {
+        "typescript": "^5.4.0",
+      },
+    },
     "packages/types": {
       "name": "@cerebrex/types",
       "version": "0.1.0",
@@ -144,6 +151,8 @@
     "@cerebrex/core": ["@cerebrex/core@workspace:packages/core"],
 
     "@cerebrex/registry": ["@cerebrex/registry@workspace:packages/registry-client"],
+
+    "@cerebrex/system-prompt": ["@cerebrex/system-prompt@workspace:packages/system-prompt"],
 
     "@cerebrex/types": ["@cerebrex/types@workspace:packages/types"],
 

@@ -22,15 +22,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: cd workers/kairos && bun install --frozen-lockfile 2>/dev/null || true
+      # Skip deployment if the wrangler.toml still has placeholder resource IDs.
+      # Run: wrangler d1 create cerebrex-kairos
+      # then update workers/kairos/wrangler.toml with the real ID.
+      - name: Check for placeholder IDs
+        id: preflight
+        run: |
+          if grep -q "REPLACE_WITH_YOUR" workers/kairos/wrangler.toml; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️  workers/kairos/wrangler.toml still has placeholder resource IDs — skipping deploy."
+            echo "   Create the D1 database in Cloudflare, then update wrangler.toml with the real database_id."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Deploy KAIROS Worker
-        run: cd workers/kairos && bunx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        if: steps.preflight.outputs.skip == 'false'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/kairos

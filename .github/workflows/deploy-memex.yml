@@ -22,15 +22,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: cd workers/memex && bun install --frozen-lockfile 2>/dev/null || true
+      # Skip deployment if the wrangler.toml still has placeholder resource IDs.
+      # Run: wrangler d1 create cerebrex-memex
+      #      wrangler kv namespace create MEMEX_INDEX
+      # then update workers/memex/wrangler.toml with the real IDs.
+      - name: Check for placeholder IDs
+        id: preflight
+        run: |
+          if grep -q "REPLACE_WITH_YOUR" workers/memex/wrangler.toml; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "⚠️  workers/memex/wrangler.toml still has placeholder resource IDs — skipping deploy."
+            echo "   Create the D1 database, KV namespace, and R2 bucket in Cloudflare, then update wrangler.toml."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Deploy MEMEX Worker
-        run: cd workers/memex && bunx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        if: steps.preflight.outputs.skip == 'false'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/memex

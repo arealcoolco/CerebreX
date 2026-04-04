@@ -19,6 +19,7 @@ import fs from 'fs';
 import os from 'os';
 import http from 'node:http';
 import crypto from 'node:crypto';
+import { gateAction, buildPolicy } from '../core/auth/risk-gate.js';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -92,6 +93,8 @@ export function verifyToken(token: string, secret: string): Record<string, unkno
     if (payload.exp && typeof payload.exp === 'number' && now > payload.exp) return null;
     if (payload.nbf && typeof payload.nbf === 'number' && now < payload.nbf) return null;
     if (payload.iat && typeof payload.iat === 'number' && payload.iat > now + 60) return null;
+    // sub claim must be present and non-empty
+    if (!payload.sub || typeof payload.sub !== 'string' || payload.sub.trim() === '') return null;
     return payload;
   } catch {
     return null;
@@ -223,11 +226,20 @@ hiveCommand
         return sendJson({ hive: config.name, id: config.id, agents: state.agents.length, tasks: state.tasks.length });
       }
 
-      // POST /token — issue a JWT for an agent
+      // POST /token — issue a JWT for an agent (requires registration_secret)
       if (url.pathname === '/token' && method === 'POST') {
         return withBody((body) => {
-          const { agent_id, agent_name } = body as { agent_id?: string; agent_name?: string };
+          const { agent_id, agent_name, registration_secret } = body as {
+            agent_id?: string; agent_name?: string; registration_secret?: string;
+          };
           if (!agent_id) return sendJson({ error: 'agent_id required' }, 400);
+          // Constant-time comparison to prevent timing oracle on the hive secret
+          if (!registration_secret) return sendJson({ error: 'registration_secret required' }, 401);
+          const secBuf = Buffer.from(registration_secret);
+          const cfgBuf = Buffer.from(config.secret);
+          if (secBuf.length !== cfgBuf.length || !crypto.timingSafeEqual(secBuf, cfgBuf)) {
+            return sendJson({ error: 'Invalid registration_secret' }, 401);
+          }
           const token = signToken(
             { sub: agent_id, name: agent_name || agent_id, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 },
             config.secret
@@ -363,11 +375,19 @@ hiveCommand
     const spinner = ora('Connecting to HIVE...').start();
 
     try {
-      // Get a JWT first
+      // Load local hive config to get the registration secret
+      const configDir = HIVE_DIR;
+      const localConfig = loadConfig(configDir);
+      if (!localConfig) {
+        spinner.fail('No HIVE config found. Run: cerebrex hive init');
+        process.exit(1);
+      }
+
+      // Get a JWT first — registration_secret authenticates the request
       const tokenRes = await fetch(`${options.hiveUrl}/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent_id: options.id, agent_name: options.name }),
+        body: JSON.stringify({ agent_id: options.id, agent_name: options.name, registration_secret: localConfig.secret }),
       });
 
       if (!tokenRes.ok) throw new Error(`Token request failed: ${tokenRes.status}`);
@@ -597,6 +617,8 @@ hiveCommand
   .option('--concurrency <n>', 'Max tasks to run in parallel', '1')
   .option('--trace-port <port>', 'TRACE server port to emit steps to')
   .option('--trace-session <id>', 'TRACE session ID to attach steps to')
+  .option('--allow-high-risk', 'Allow HIGH-risk task types (fetch, deploy, send, etc.) — off by default')
+  .option('--block-medium-risk', 'Block MEDIUM-risk task types (memex-set, write, etc.)')
   .action(async (options) => {
     const agentId: string = options.id;
     const hiveUrl: string = options.hiveUrl;
@@ -605,6 +627,10 @@ hiveCommand
     const maxConcurrency = parseInt(options.concurrency, 10);
     const tracePort = options.tracePort ? parseInt(options.tracePort, 10) : null;
     const traceSession: string | null = options.traceSession ?? null;
+    const riskPolicy = buildPolicy({
+      allowHighRisk: options.allowHighRisk ?? false,
+      allowMediumRisk: !(options.blockMediumRisk ?? false),
+    });
 
     // ── Load handler ──────────────────────────────────────────────────────────
     let execute: ExecuteHandler;
@@ -641,6 +667,12 @@ hiveCommand
       console.log(chalk.dim(`  Handler:     ${options.handler ? path.basename(options.handler as string) : 'built-in'}`));
       console.log(chalk.dim(`  Poll:        every ${pollIntervalMs}ms`));
       console.log(chalk.dim(`  Concurrency: ${maxConcurrency}`));
+      const riskLabel = riskPolicy.allowHigh
+        ? chalk.red('HIGH/MEDIUM/LOW')
+        : riskPolicy.allowMedium
+          ? chalk.yellow('MEDIUM/LOW (high blocked)')
+          : chalk.green('LOW only');
+      console.log(chalk.dim(`  Risk policy: ${riskLabel}`));
       if (tracePort && traceSession) {
         console.log(chalk.dim(`  Trace:       :${tracePort} / session=${traceSession}`));
       }
@@ -670,7 +702,24 @@ hiveCommand
       } catch { inFlight--; return; }
 
       const payloadPreview = JSON.stringify(task.payload).slice(0, 60);
-      console.log(`  ${chalk.yellow('→')} ${chalk.bold(task.type)} ${chalk.dim(task.id.slice(0, 8))} ${chalk.dim(payloadPreview)}`);
+
+      // ── Risk gate — block task if policy doesn't permit it ────────────────────
+      const gate = gateAction(task.type, riskPolicy);
+      if (!gate.allowed) {
+        console.log(`  ${chalk.red('⛔')} ${chalk.bold(task.type)} ${chalk.dim(task.id.slice(0, 8))} ${chalk.red(`[${gate.risk.toUpperCase()}]`)} ${chalk.dim(gate.reason)}`);
+        // Mark as failed so the coordinator knows it was blocked
+        try {
+          await fetch(`${hiveUrl}/tasks/${task.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ status: 'failed', error: gate.reason }),
+          });
+        } catch { /* best-effort */ }
+        inFlight--;
+        return;
+      }
+
+      console.log(`  ${chalk.yellow('→')} ${chalk.bold(task.type)} ${chalk.dim(task.id.slice(0, 8))} ${chalk.dim(`[${gate.risk}]`)} ${chalk.dim(payloadPreview)}`);
 
       let result: unknown;
       let taskError: string | undefined;

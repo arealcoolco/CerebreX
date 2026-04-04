@@ -22,10 +22,14 @@ export interface Env {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const MAX_GOAL_BYTES     = 50_000;  // ~12K tokens — generous but bounded
+const MAX_PAYLOAD_BYTES  = 65_536;  // 64KB per task payload
+const MAX_AGENT_ID_LEN   = 128;
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    headers: { 'Content-Type': 'application/json' }, // no wildcard CORS — auth required
   });
 }
 
@@ -33,9 +37,31 @@ function err(message: string, status = 400): Response {
   return json({ success: false, error: message }, status);
 }
 
+/** Constant-time string comparison — prevents timing oracle attacks on API keys. */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const aBuf = enc.encode(a);
+  const bBuf = enc.encode(b);
+  const maxLen = Math.max(aBuf.length, bBuf.length);
+  const aPad = new Uint8Array(maxLen);
+  const bPad = new Uint8Array(maxLen);
+  aPad.set(aBuf);
+  bPad.set(bBuf);
+  let diff = aBuf.length ^ bBuf.length;
+  for (let i = 0; i < maxLen; i++) diff |= aPad[i]! ^ bPad[i]!;
+  return diff === 0;
+}
+
 function auth(req: Request, env: Env): boolean {
+  if (!env.CEREBREX_API_KEY) return false;
   const key = req.headers.get('x-api-key') ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  return key === env.CEREBREX_API_KEY;
+  if (!key) return false;
+  return timingSafeEqual(key, env.CEREBREX_API_KEY);
+}
+
+/** Validate agentId format — prevent path traversal and injection. */
+function validAgentId(s: string): boolean {
+  return typeof s === 'string' && s.length > 0 && s.length <= MAX_AGENT_ID_LEN && /^[a-zA-Z0-9_-]+$/.test(s);
 }
 
 function nanoid(): string {
@@ -52,6 +78,7 @@ async function claudeCall(
   maxTokens = 500,
   timeoutMs = 15_000
 ): Promise<string> {
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -152,10 +179,15 @@ Respond with JSON: { "act": boolean, "reasoning": string, "action"?: string }`,
       );
 
       try {
-        const parsed = JSON.parse(tickResponse) as { act?: boolean; reasoning?: string; action?: string };
-        decided = parsed.act ?? false;
-        reasoning = parsed.reasoning ?? '';
-        action = parsed.action ?? '';
+        const raw = JSON.parse(tickResponse);
+        // Strict type validation — don't trust Claude's JSON blindly
+        if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+          throw new TypeError('tick response must be a JSON object');
+        }
+        const r = raw as Record<string, unknown>;
+        decided   = r['act']       === true;
+        reasoning = typeof r['reasoning'] === 'string' ? r['reasoning'].slice(0, 1000) : '';
+        action    = typeof r['action']    === 'string' ? r['action'].slice(0, 500)     : '';
 
         if (decided && action) {
           // Queue the proactive action as a task
@@ -173,7 +205,25 @@ Respond with JSON: { "act": boolean, "reasoning": string, "action"?: string }`,
       }
     } catch (e) {
       result = `error: ${(e as Error).message}`;
+      // Exponential backoff — consecutive errors slow the daemon down
+      const errors = ((await this.state.storage.get<number>('consecutiveErrors')) ?? 0) + 1;
+      await this.state.storage.put('consecutiveErrors', errors);
+      const backoffMs = Math.min(errors * 60_000, 1_800_000); // 1min → 30min cap
+      const intervalMs = parseInt(this.env.TICK_INTERVAL_MS, 10) || 300_000;
+      await this.state.storage.setAlarm(Date.now() + Math.max(intervalMs, backoffMs));
+      // Still log the error tick before returning
+      await this.env.DB.prepare(
+        `INSERT INTO daemon_log (agent_id, tick_at, decided, reasoning, action, result, latency_ms)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).bind(agentId, now, 0, reasoning, action, result, Date.now() - start).run();
+      await this.env.DB.prepare(
+        `UPDATE daemon_registry SET last_tick = ?, tick_count = tick_count + 1 WHERE agent_id = ?`
+      ).bind(now, agentId).run();
+      return;
     }
+
+    // Reset backoff counter on successful tick
+    await this.state.storage.put('consecutiveErrors', 0);
 
     // Append-only log — never delete
     await this.env.DB.prepare(
@@ -220,6 +270,7 @@ export default {
     const daemonMatch = pathname.match(/^\/v1\/agents\/([^/]+)\/daemon(?:\/(.+))?$/);
     if (daemonMatch) {
       const agentId = decodeURIComponent(daemonMatch[1]!);
+      if (!validAgentId(agentId)) return err('Invalid agentId — alphanumeric, underscores, hyphens only (1-128 chars)', 400);
       const sub = daemonMatch[2] ?? '';
       const doId = env.KAIROS.idFromName(agentId);
       const stub = env.KAIROS.get(doId);
@@ -255,6 +306,7 @@ export default {
     const tasksMatch = pathname.match(/^\/v1\/agents\/([^/]+)\/tasks(?:\/([^/]+))?$/);
     if (tasksMatch) {
       const agentId = decodeURIComponent(tasksMatch[1]!);
+      if (!validAgentId(agentId)) return err('Invalid agentId — alphanumeric, underscores, hyphens only (1-128 chars)', 400);
       const taskId = tasksMatch[2];
 
       if (!taskId && method === 'POST') {
@@ -298,6 +350,9 @@ export default {
     if (pathname === '/v1/ultraplan' && method === 'POST') {
       const { goal, createdBy } = await request.json() as { goal: string; createdBy?: string };
       if (!goal?.trim()) return err('goal is required');
+      if (new TextEncoder().encode(goal).length > MAX_GOAL_BYTES) {
+        return err(`goal too large — max ${MAX_GOAL_BYTES} bytes`, 413);
+      }
 
       const id = nanoid();
 

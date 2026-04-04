@@ -19,7 +19,7 @@ The complete infrastructure layer for AI agents — in one CLI.
 
 ---
 
-> **Status: v0.9.0 — Three-layer memory, KAIROS daemon, HIVE swarms, risk gate**
+> **Status: v0.9.1 — Security hardening patch: risk gate integrated, JWT auth on token endpoint, KAIROS backoff + validation**
 > `npm install -g cerebrex` — or download a self-contained binary from [GitHub Releases](https://github.com/arealcoolco/CerebreX/releases) (no Node.js required)
 >
 > **Live:** Registry UI → `https://registry.therealcool.site`
@@ -338,6 +338,7 @@ cd apps/cli && bun run build
 - [x] AUTH risk gate — LOW/MEDIUM/HIGH classification on every agent action *(v0.9)*
 - [x] HIVE swarm strategies — parallel, pipeline, competitive + 6 built-in presets *(v0.9)*
 - [x] `@cerebrex/system-prompt` — master system prompt package + live MEMEX context loader *(v0.9)*
+- [x] Security hardening — risk gate wired into HIVE worker, JWT /token endpoint authenticated, KAIROS exponential backoff + JSON validation, agentId injection prevention *(v0.9.1)*
 - [ ] Agent test runner — `cerebrex test` with replay + assertions *(v1.0)*
 - [ ] Custom domain *(next)*
 - [ ] Enterprise tier + on-prem *(v1.0)*

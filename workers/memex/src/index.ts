@@ -20,13 +20,15 @@ export interface Env {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const MAX_TRANSCRIPT_BYTES = 1_048_576; // 1MB per transcript
+const MAX_TOPIC_BYTES      = 524_288;   // 512KB per topic file
+const MAX_INDEX_BYTES      = 25_600;    // 25KB index hard limit
+const MAX_SESSION_ID_LEN   = 128;
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
+    headers: { 'Content-Type': 'application/json' }, // no wildcard CORS — auth required
   });
 }
 
@@ -34,14 +36,40 @@ function err(message: string, status = 400): Response {
   return json({ success: false, error: message }, status);
 }
 
+/** Constant-time string comparison — prevents timing oracle attacks on API keys. */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const aBuf = enc.encode(a);
+  const bBuf = enc.encode(b);
+  const maxLen = Math.max(aBuf.length, bBuf.length);
+  const aPad = new Uint8Array(maxLen);
+  const bPad = new Uint8Array(maxLen);
+  aPad.set(aBuf);
+  bPad.set(bBuf);
+  let diff = aBuf.length ^ bBuf.length; // length mismatch contributes to diff
+  for (let i = 0; i < maxLen; i++) diff |= aPad[i]! ^ bPad[i]!;
+  return diff === 0;
+}
+
 function auth(req: Request, env: Env): boolean {
+  if (!env.CEREBREX_API_KEY) return false;
   const key = req.headers.get('x-api-key') ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  return key === env.CEREBREX_API_KEY;
+  if (!key) return false;
+  return timingSafeEqual(key, env.CEREBREX_API_KEY);
+}
+
+/** Validate agentId and topic names — prevent path traversal and injection. */
+function validSegment(s: string): boolean {
+  return typeof s === 'string' && s.length > 0 && s.length <= 128 && /^[a-zA-Z0-9_-]+$/.test(s);
 }
 
 // ── autoDream — 4-phase memory consolidation ──────────────────────────────────
 
 async function runAutoDream(agentId: string, env: Env): Promise<void> {
+  if (!env.ANTHROPIC_API_KEY) {
+    console.error(`autoDream skipped for ${agentId}: ANTHROPIC_API_KEY not configured`);
+    return;
+  }
   // Phase 1: Orient — read existing index
   const index = (await env.MEMEX_INDEX.get(`memex:index:${agentId}`)) ?? '';
 
@@ -83,7 +111,10 @@ Rules:
     }),
   });
 
-  if (!response.ok) return;
+  if (!response.ok) {
+    console.error(`autoDream Claude API error for ${agentId}: HTTP ${response.status}`);
+    return;
+  }
   const result = await response.json() as { content?: Array<{ text?: string }> };
   const consolidated = result.content?.[0]?.text ?? '';
 
@@ -165,6 +196,9 @@ export default {
     const agentId = decodeURIComponent(agentMatch[1]!);
     const sub = agentMatch[2] ?? '';
 
+    // Validate agentId — prevent path traversal and injection
+    if (!validSegment(agentId)) return err('Invalid agentId: must be 1-128 chars, alphanumeric/dash/underscore only', 400);
+
     // Ensure agent record exists
     await env.DB.prepare(
       `INSERT OR IGNORE INTO agents (agent_id) VALUES (?)`
@@ -177,9 +211,11 @@ export default {
         return json({ agentId, index: content ?? '', exists: content !== null });
       }
       if (method === 'POST' || method === 'PUT') {
-        const { content } = await request.json() as { content: string };
+        const body = await request.json() as Record<string, unknown>;
+        const content = body['content'];
         if (typeof content !== 'string') return err('content must be a string');
-        const lines = content.split('\n').slice(0, 200).join('\n').substring(0, 25_000);
+        if (content.length > MAX_INDEX_BYTES) return err(`content exceeds ${MAX_INDEX_BYTES} byte limit`, 413);
+        const lines = content.split('\n').slice(0, 200).join('\n').substring(0, MAX_INDEX_BYTES);
         await env.MEMEX_INDEX.put(`memex:index:${agentId}`, lines);
         return json({ success: true, agentId, lines: lines.split('\n').length });
       }
@@ -201,6 +237,8 @@ export default {
     const topicMatch = sub.match(/^topics\/(.+)$/);
     if (topicMatch) {
       const topic = topicMatch[1]!;
+      // Validate topic segment — prevent path traversal
+      if (!validSegment(topic)) return err('Invalid topic: must be 1-128 chars, alphanumeric/dash/underscore only', 400);
       const key = `memex/${agentId}/${topic}.md`;
 
       if (method === 'GET') {
@@ -209,8 +247,10 @@ export default {
         return json({ agentId, topic, content: await obj.text() });
       }
       if (method === 'POST' || method === 'PUT') {
-        const { content } = await request.json() as { content: string };
+        const body = await request.json() as Record<string, unknown>;
+        const content = body['content'];
         if (typeof content !== 'string') return err('content must be a string');
+        if (content.length > MAX_TOPIC_BYTES) return err(`content exceeds ${MAX_TOPIC_BYTES} byte limit`, 413);
         await env.MEMEX_TOPICS.put(key, content, {
           httpMetadata: { contentType: 'text/markdown' },
         });
@@ -225,12 +265,18 @@ export default {
     // ── Layer 3: D1 transcripts ──────────────────────────────────────────
     if (sub === 'transcripts') {
       if (method === 'POST') {
-        const { content, sessionId } = await request.json() as { content: string; sessionId?: string };
+        const body = await request.json() as Record<string, unknown>;
+        const content = body['content'];
+        const sessionId = body['sessionId'];
         if (typeof content !== 'string') return err('content must be a string');
+        if (content.length > MAX_TRANSCRIPT_BYTES) return err(`content exceeds ${MAX_TRANSCRIPT_BYTES} byte limit`, 413);
+        if (sessionId !== undefined && (typeof sessionId !== 'string' || sessionId.length > MAX_SESSION_ID_LEN)) {
+          return err('sessionId must be a string ≤128 chars', 400);
+        }
         const tokens = Math.ceil(content.length / 4); // rough estimate
         await env.DB.prepare(
           `INSERT INTO transcripts (agent_id, session_id, content, token_count) VALUES (?, ?, ?, ?)`
-        ).bind(agentId, sessionId ?? null, content, tokens).run();
+        ).bind(agentId, typeof sessionId === 'string' ? sessionId : null, content, tokens).run();
         await env.DB.prepare(
           `UPDATE agents SET session_count = session_count + 1 WHERE agent_id = ?`
         ).bind(agentId).run();
@@ -256,10 +302,17 @@ export default {
     // ── Context assembly ─────────────────────────────────────────────────
     if (sub === 'context') {
       if (method === 'POST') {
-        const { topics = [], baseSystemPrompt = '' } = await request.json() as {
-          topics?: string[];
-          baseSystemPrompt?: string;
-        };
+        const body = await request.json() as Record<string, unknown>;
+        const rawTopics = body['topics'];
+        const baseSystemPrompt = typeof body['baseSystemPrompt'] === 'string' ? body['baseSystemPrompt'] : '';
+        // Validate topics array — each must be a valid segment
+        const topics: string[] = [];
+        if (Array.isArray(rawTopics)) {
+          for (const t of rawTopics) {
+            if (typeof t === 'string' && validSegment(t)) topics.push(t);
+          }
+        }
+        if (topics.length > 20) return err('topics array exceeds 20-item limit', 400);
         const ctx = await assembleContext(agentId, topics, env);
         const parts: string[] = [];
 
@@ -284,9 +337,14 @@ export default {
       }
     }
 
-    // ── Manual consolidation ─────────────────────────────────────────────
+    // ── Manual consolidation (rate-limited: 1 per hour per agent) ────────
     if (sub === 'consolidate') {
       if (method === 'POST') {
+        const rlKey = `consolidate:${agentId}`;
+        const existing = await env.MEMEX_INDEX.get(rlKey);
+        if (existing) return err('Consolidation rate limit: once per hour per agent', 429);
+        // Set a 1-hour marker (use MEMEX_INDEX KV for this — no extra binding needed)
+        await env.MEMEX_INDEX.put(rlKey, '1', { expirationTtl: 3600 });
         await runAutoDream(agentId, env);
         return json({ success: true, agentId, message: 'autoDream consolidation complete' });
       }

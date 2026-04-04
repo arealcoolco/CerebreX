@@ -6,6 +6,32 @@ This project follows [Semantic Versioning](https://semver.org/) and [Conventiona
 
 ---
 
+## [0.9.1] — 2026-04-04
+
+### Security Hardening — Risk Gate Integration + JWT Auth + KAIROS Hardening
+
+Full audit-driven security patch. Every finding from the v0.9.0 deep security audit is resolved.
+
+#### HIVE Worker — Risk Gate Now Active
+- **Risk gate wired in** — `gateAction()` from `risk-gate.ts` is now called before every task execution in `cerebrex hive worker`. Tasks classified as HIGH risk are blocked by default; blocked tasks are marked `failed` on the coordinator so the queue doesn't stall
+- **Visible policy at startup** — worker prints its risk policy (LOW/MEDIUM/HIGH) when it starts, so operators know what's permitted
+- **`--allow-high-risk` flag** — opt-in to permit HIGH-risk task types (deploy, send, daemon-start, etc.)
+- **`--block-medium-risk` flag** — opt-in to restrict MEDIUM-risk types (fetch, memex-set, write)
+- **Risk level shown per task** — each task log line now shows `[low]`/`[medium]`/`[high]` before the payload preview
+
+#### HIVE Coordinator — JWT /token Endpoint Authenticated
+- **`POST /token` now requires `registration_secret`** — must match the local `hive.json` secret (constant-time comparison). Unauthenticated token issuance for arbitrary agent IDs is no longer possible
+- **`cerebrex hive register` updated** — automatically reads the local hive config and sends `registration_secret`; no change to user workflow
+- **`sub` claim validated** — `verifyToken()` now rejects tokens with a missing, empty, or non-string `sub` claim
+
+#### KAIROS Worker — Daemon Hardening
+- **JSON parse validation** — Claude's tick response is now structurally validated before use; `act` must be exactly `true` (not truthy), `reasoning`/`action` must be strings, length-capped to 1000/500 chars respectively
+- **Exponential backoff on errors** — consecutive API failures ramp the alarm interval from 1 minute up to 30 minutes (cap), preventing rapid retry loops when Claude API is slow or unavailable; resets to zero on a successful tick
+- **agentId injection prevention** — daemon and task route handlers now call `validAgentId()` on every extracted agentId (alphanumeric + `_-`, 1–128 chars), returning 400 before any DB or DO call
+- **ULTRAPLAN goal size limit** — goals exceeding 50,000 bytes (≈12K tokens) are rejected with HTTP 413 before the Opus call is made
+
+---
+
 ## [0.9.0] — 2026-04-04
 
 ### Claude Architecture Patterns — MEMEX v2, KAIROS Daemon, HIVE Swarms, Risk Gate

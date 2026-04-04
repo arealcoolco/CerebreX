@@ -2,6 +2,8 @@
 
 Everything you need to go from zero to running AI agents with memory, tooling, and coordination.
 
+**Current version: v0.9.1**
+
 ---
 
 ## Prerequisites
@@ -20,7 +22,14 @@ npm install -g cerebrex
 cerebrex --help
 ```
 
-You should see all 6 commands: `build`, `trace`, `memex`, `auth`, `hive`, `publish`.
+You should see all commands: `build`, `trace`, `memex`, `auth`, `hive`, `publish`, and more.
+
+**Or download a standalone binary** (no Node.js required):
+- `cerebrex-linux-x64` — Linux x64 (Ubuntu, Debian, Chrome OS)
+- `cerebrex-linux-arm64` — Linux ARM64 (Raspberry Pi, ARM servers)
+- `cerebrex-windows-x64.exe` — Windows 10/11
+
+Download from [GitHub Releases](https://github.com/arealcoolco/CerebreX/releases).
 
 ---
 
@@ -38,7 +47,7 @@ cerebrex auth register
 ```bash
 cerebrex auth login
 # paste your token when prompted — verified against the registry before saving
-# stored at ~/.cerebrex/.credentials (mode 0600)
+# stored at ~/.cerebrex/.credentials (mode 0600; icacls-hardened on Windows)
 ```
 
 **Check your status:**
@@ -79,14 +88,16 @@ cerebrex configure @arealcoolco/github-mcp --env GITHUB_TOKEN=ghp_...
 cerebrex configure @arealcoolco/nasa-mcp --env NASA_API_KEY=DEMO_KEY --dry-run
 ```
 
-This writes to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
-or `%APPDATA%\Claude\claude_desktop_config.json` (Windows).
+This writes to `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or
+`~/Library/Application Support/Claude/claude_desktop_config.json` (macOS).
 
 Restart Claude Desktop after configuring.
 
 ---
 
 ## 5 — Test MEMEX (Persistent Memory)
+
+### Local MEMEX (CLI)
 
 ```bash
 # store a value
@@ -104,9 +115,52 @@ cerebrex memex set "session-token" "abc123" --ttl 60
 
 # delete a key
 cerebrex memex delete "session-token"
+
+# list namespaces
+cerebrex memex namespaces
 ```
 
 Memories are stored locally at `~/.cerebrex/memex/` with SHA-256 checksums.
+Reads verify integrity before returning — tampered files are rejected.
+
+### Cloud MEMEX v2 — Three-Layer Architecture
+
+The MEMEX cloud worker (`workers/memex/`) uses three storage layers:
+
+| Layer | Storage | Role |
+|-------|---------|------|
+| **Index** | Cloudflare KV | Pointer map, always hot, ≤200 lines / 25KB |
+| **Topics** | Cloudflare R2 | Per-topic knowledge files, on-demand, ≤512KB each |
+| **Transcripts** | Cloudflare D1 | Append-only session history, search-only, ≤1MB each |
+
+```bash
+# Read/write the KV pointer index
+GET  /v1/agents/my-agent/memory/index
+POST /v1/agents/my-agent/memory/index  { "content": "..." }
+
+# Read/write per-topic R2 files
+GET    /v1/agents/my-agent/memory/topics/research
+POST   /v1/agents/my-agent/memory/topics/research  { "content": "..." }
+DELETE /v1/agents/my-agent/memory/topics/research
+
+# Append session history
+POST /v1/agents/my-agent/memory/transcripts  { "content": "..." }
+
+# Full-text search across all transcripts
+GET /v1/agents/my-agent/memory/transcripts/search?q=vector+database
+
+# Assemble all three layers into one system prompt injection
+POST /v1/agents/my-agent/memory/context
+
+# Trigger manual autoDream consolidation (rate-limited: 1/hour per agent)
+POST /v1/agents/my-agent/memory/consolidate
+```
+
+**autoDream** runs nightly at 03:00 UTC:
+1. **Orient** — reads the current index
+2. **Gather** — pulls the last 50 transcripts from D1
+3. **Consolidate** — Claude synthesizes, removes contradictions, updates topics
+4. **Prune** — enforces 200-line / 25KB hard limits on the index
 
 **Test cloud MEMEX via MCP:**
 Once `@arealcoolco/memex-mcp` is configured in Claude Desktop, open Claude and say:
@@ -142,6 +196,10 @@ cerebrex hive status
 cerebrex hive stop
 ```
 
+> **Note:** `cerebrex hive register` reads your local `~/.cerebrex/hive/hive.json` to authenticate
+> the token request. The coordinator's `/token` endpoint requires a `registration_secret` — the
+> CLI sends it automatically. You cannot issue tokens without access to the hive config.
+
 ### Worker pattern — tasks that actually execute
 
 Workers are long-running processes that poll for tasks, execute them, and report results back.
@@ -151,25 +209,19 @@ Workers are long-running processes that poll for tasks, execute them, and report
 cerebrex hive start
 ```
 
-**Terminal 2 — start researcher worker:**
+**Terminal 2 — start researcher worker (default: medium + low tasks only):**
 ```bash
 cerebrex hive worker --id researcher --token <RESEARCHER_JWT>
-# Worker is now polling for tasks every 2 seconds
+# Worker is now polling every 2 seconds
+# Risk policy: MEDIUM/LOW (high blocked)
 ```
 
-**Terminal 3 — start writer worker with custom handler:**
+**Terminal 3 — start writer worker allowing all risk levels:**
 ```bash
-# writer-handler.mjs
-cat > writer-handler.mjs << 'EOF'
-export async function execute(task) {
-  if (task.type === 'summarize') {
-    return { summary: `Summary of: ${JSON.stringify(task.payload)}` };
-  }
-  throw new Error(`Unknown task type: ${task.type}`);
-}
-EOF
-
-cerebrex hive worker --id writer --token <WRITER_JWT> --handler ./writer-handler.mjs
+cerebrex hive worker --id writer --token <WRITER_JWT> \
+  --allow-high-risk \
+  --handler ./writer-handler.mjs
+# Risk policy: HIGH/MEDIUM/LOW
 ```
 
 **Terminal 4 — send tasks and watch them execute:**
@@ -196,19 +248,58 @@ cerebrex hive send --agent writer --type summarize \
   --payload '{"topic":"agent infrastructure"}' \
   --token <WRITER_JWT>
 
-# watch results update in real time
+# watch results
 cerebrex hive status
 ```
 
+### Risk gate — what gets blocked and why
+
+The HIVE worker classifies every task before running it:
+
+| Type | Risk | Blocked by default? |
+|------|------|-------------------|
+| `noop`, `echo`, `memex-get`, `read`, `search` | LOW | No |
+| `fetch`, `memex-set`, `write`, `configure` | MEDIUM | No |
+| `delete`, `deploy`, `publish`, `send`, `daemon-start` | HIGH | **Yes** |
+| Any unknown type | HIGH | **Yes** |
+
+Blocked tasks are marked `failed` on the coordinator and logged with the denial reason.
+To permit HIGH-risk tasks: `cerebrex hive worker --id <id> --token <jwt> --allow-high-risk`.
+To block even MEDIUM tasks: add `--block-medium-risk`.
+
 ### Built-in task types
 
-| Type | Required payload | What it does |
-|------|-----------------|--------------|
-| `noop` | anything | Completes immediately |
-| `echo` | anything | Returns payload as result |
-| `fetch` | `{ url, method?, headers?, body? }` | Makes an HTTP request |
-| `memex-set` | `{ key, value, namespace?, ttl? }` | Writes to local MEMEX |
-| `memex-get` | `{ key, namespace? }` | Reads from local MEMEX |
+| Type | Required payload | Risk |
+|------|-----------------|------|
+| `noop` | anything | LOW |
+| `echo` | anything | LOW |
+| `memex-get` | `{ key, namespace? }` | LOW |
+| `memex-set` | `{ key, value, namespace?, ttl? }` | MEDIUM |
+| `fetch` | `{ url, method?, headers?, body? }` | MEDIUM |
+
+### Swarm strategies — multi-agent presets
+
+```bash
+# list all strategies and presets
+cerebrex hive strategies
+
+# run a preset against a goal
+cerebrex hive swarm research-and-recommend "Best time-series database for IoT workloads?"
+cerebrex hive swarm code-review-pipeline   "Review the auth module for security issues"
+cerebrex hive swarm best-solution          "Should we use REST or GraphQL for this API?"
+cerebrex hive swarm product-spec           "Design a push notification system"
+cerebrex hive swarm content-pipeline       "Write a blog post about AI agent orchestration"
+cerebrex hive swarm contract-audit         "Audit this API contract for breaking changes"
+```
+
+| Preset | Strategy | Agents |
+|--------|----------|--------|
+| `research-and-recommend` | pipeline | researcher → analyst → recommender |
+| `code-review-pipeline` | pipeline | reviewer → security → summarizer |
+| `best-solution` | competitive | 3 solvers race, Opus picks winner |
+| `product-spec` | pipeline | product manager → engineer → designer |
+| `content-pipeline` | pipeline | researcher → writer → editor |
+| `contract-audit` | parallel | 3 auditors in parallel, results merged |
 
 ### Full HIVE + TRACE observability
 
@@ -229,15 +320,79 @@ cerebrex trace view --session hive-demo --web
 ```
 
 **Test cloud HIVE via MCP:**
-Once `@arealcoolco/hive-mcp` is configured in Claude Desktop with `CEREBREX_TOKEN=<your-token>`, say:
-> "Create a new hive called 'test-hive' with config {}"
+Once `@arealcoolco/hive-mcp` is configured with `CEREBREX_TOKEN=<your-token>`, say:
+> "Create a new hive called 'test-hive'"
 
 Then:
 > "List all my hives"
 
 ---
 
-## 7 — Test TRACE (Observability)
+## 7 — Test KAIROS (Autonomous Agent Daemon)
+
+KAIROS is a cloud daemon built on Cloudflare Durable Objects. Each agent gets a persistent
+background process that wakes every 5 minutes, consults Claude, and logs every decision.
+
+```bash
+# Start a daemon (requires KAIROS worker URL + API key)
+curl -X POST https://your-kairos.workers.dev/v1/agents/my-agent/daemon/start \
+  -H "x-api-key: $CEREBREX_API_KEY"
+
+# Check daemon status
+curl https://your-kairos.workers.dev/v1/agents/my-agent/daemon/status \
+  -H "x-api-key: $CEREBREX_API_KEY"
+
+# View the immutable tick log
+curl "https://your-kairos.workers.dev/v1/agents/my-agent/daemon/log?limit=10" \
+  -H "x-api-key: $CEREBREX_API_KEY"
+
+# Queue a task manually
+curl -X POST https://your-kairos.workers.dev/v1/agents/my-agent/tasks \
+  -H "x-api-key: $CEREBREX_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"fetch","payload":{"url":"https://httpbin.org/uuid"}}'
+
+# Stop the daemon
+curl -X POST https://your-kairos.workers.dev/v1/agents/my-agent/daemon/stop \
+  -H "x-api-key: $CEREBREX_API_KEY"
+```
+
+**Security notes:**
+- agentId must be alphanumeric + `_-`, 1–128 characters (enforced server-side)
+- The daemon backs off exponentially if Claude API calls fail repeatedly (1 min → 30 min cap)
+- Every tick is written to an append-only D1 log — no history can be deleted
+
+---
+
+## 8 — Test ULTRAPLAN (Opus Deep-Thinking Planning)
+
+```bash
+# Submit a goal — Opus starts planning immediately (async)
+curl -X POST https://your-kairos.workers.dev/v1/ultraplan \
+  -H "x-api-key: $CEREBREX_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"goal":"Build a competitive analysis of the top 5 vector databases"}'
+# → { "planId": "abc123", "status": "planning", "message": "Opus is thinking..." }
+
+# Poll until status is "pending" (usually 30–60 seconds)
+curl https://your-kairos.workers.dev/v1/ultraplan/abc123 \
+  -H "x-api-key: $CEREBREX_API_KEY"
+# → { status: "pending", plan: { summary, rationale, tasks, risks, success_criteria } }
+
+# Review the plan, then approve — all tasks queue simultaneously
+curl -X POST https://your-kairos.workers.dev/v1/ultraplan/abc123/approve \
+  -H "x-api-key: $CEREBREX_API_KEY"
+
+# Or reject it
+curl -X POST https://your-kairos.workers.dev/v1/ultraplan/abc123/reject \
+  -H "x-api-key: $CEREBREX_API_KEY"
+```
+
+Goals are capped at 50,000 bytes — the server returns HTTP 413 before calling Opus if exceeded.
+
+---
+
+## 9 — Test TRACE (Observability)
 
 ```bash
 # start a trace session
@@ -265,7 +420,7 @@ Traces are saved to `~/.cerebrex/traces/`.
 
 ---
 
-## 8 — Test FORGE (MCP Server Generation)
+## 10 — Test FORGE (MCP Server Generation)
 
 ```bash
 # scaffold a new MCP server from an OpenAPI spec
@@ -276,14 +431,14 @@ cerebrex validate ./my-petstore-mcp
 cerebrex validate ./my-petstore-mcp --strict  # OWASP checks
 
 ls ./my-petstore-mcp/
-# src/index.ts — tool implementation
+# src/index.ts — tool implementation with Zod validation
 # package.json — pre-configured
 # wrangler.toml — ready for Cloudflare Workers
 ```
 
 ---
 
-## 9 — Publish to the Registry
+## 11 — Publish to the Registry
 
 ```bash
 # build your package
@@ -301,7 +456,7 @@ cerebrex search petstore
 
 ---
 
-## 10 — Test the Registry Web UI
+## 12 — Test the Registry Web UI
 
 Open [registry.therealcool.site](https://registry.therealcool.site) in a browser:
 
@@ -309,6 +464,7 @@ Open [registry.therealcool.site](https://registry.therealcool.site) in a browser
 2. Use the **search bar** — try "github", "nasa", "fetch"
 3. Sign up and visit **/account** — view your tokens, packages, profile
 4. Drag a trace JSON file into the **Trace Explorer** at `/ui/trace`
+5. **Install as a PWA** on Android or Chrome OS — tap "Add to Home Screen" in Chrome
 
 ---
 
@@ -337,6 +493,14 @@ NASA_API_KEY            # required for nasa-mcp (DEMO_KEY works for testing)
 OWM_API_KEY             # required for openweathermap-mcp
 ```
 
+**For cloud workers (set as Cloudflare secrets):**
+```bash
+CEREBREX_API_KEY        # authenticates all MEMEX + KAIROS API requests
+ANTHROPIC_API_KEY       # required for autoDream consolidation and KAIROS tick decisions
+TICK_INTERVAL_MS        # KAIROS: ms between daemon ticks (default: 300000 = 5 minutes)
+TICK_BUDGET_MS          # KAIROS: Claude call timeout per tick (default: 15000 = 15 seconds)
+```
+
 ---
 
 ## Troubleshooting
@@ -344,8 +508,6 @@ OWM_API_KEY             # required for openweathermap-mcp
 **`cerebrex: command not found`**
 ```bash
 npm install -g cerebrex
-# or if using nvm:
-node $(which cerebrex)
 ```
 
 **Auth token not working**
@@ -355,16 +517,40 @@ cerebrex auth logout    # clear stored credentials
 cerebrex auth login     # re-authenticate
 ```
 
+**`cerebrex hive register` fails with 401**
+```bash
+# Make sure you've run cerebrex hive init first — register reads the local hive.json
+cerebrex hive init --name my-hive
+cerebrex hive start
+cerebrex hive register --id myagent --name "My Agent"
+```
+
+**HIVE worker blocks a task you expected to run**
+```bash
+# Check the task type's risk level with cerebrex hive strategies
+# For HIGH-risk types (fetch, deploy, send, etc.):
+cerebrex hive worker --id <id> --token <jwt> --allow-high-risk
+```
+
 **Package not found after install**
 ```bash
-# packages live at:
 ls ~/.cerebrex/packages/
 ```
 
 **Claude Desktop not showing MCP tools**
 - Restart Claude Desktop after running `cerebrex configure`
-- Check `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+- Check `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 - Confirm the package binary exists at the path in the config
+
+**KAIROS daemon not ticking**
+```bash
+# Check daemon status via the KAIROS REST API
+curl https://your-kairos.workers.dev/v1/agents/my-agent/daemon/status \
+  -H "x-api-key: $CEREBREX_API_KEY"
+
+# If consecutiveErrors > 0, the daemon is in backoff mode
+# It will resume automatically when the backoff interval elapses
+```
 
 ---
 

@@ -5,6 +5,19 @@ CerebreX MEMEX — persistent cloud memory MCP server for AI agents.
 Give your AI agents durable memory that survives context windows, restarts, and redeployments.
 Store facts, decisions, learned behaviors, and session context — queryable from any MCP-compatible runtime.
 
+## Architecture
+
+MEMEX v2 uses a three-layer cloud storage architecture:
+
+| Layer | Storage | What lives here |
+|-------|---------|----------------|
+| **Index** | Cloudflare KV | Pointer map — always hot, ≤200 lines / 25KB |
+| **Topics** | Cloudflare R2 | Per-topic knowledge files, on-demand, ≤512KB each |
+| **Transcripts** | Cloudflare D1 | Append-only session history, full-text search, ≤1MB each |
+
+**autoDream** runs nightly at 03:00 UTC: Claude reads the last 50 transcripts, synthesizes them
+into topic files, removes contradictions, and prunes the index to fit within the hard size limits.
+
 ## Install
 
 ```bash
@@ -65,6 +78,13 @@ Recall project context:
 List everything this agent knows:
 → memory_list {}
 ```
+
+## Security
+
+- All API requests require a valid `CEREBREX_TOKEN` (checked with constant-time comparison)
+- agentId values are validated against `^[a-zA-Z0-9_-]+$` — no path traversal possible
+- Transcript size is capped at 1MB per write; topic files at 512KB; index at 25KB
+- The `/consolidate` endpoint is rate-limited to 1 call per hour per agent
 
 ---
 

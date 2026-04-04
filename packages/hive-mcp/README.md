@@ -2,7 +2,8 @@
 
 CerebreX HIVE — multi-agent orchestration MCP server.
 
-Create and manage named agent networks (hives) — persistent configs that define which agents run, what tools they use, and how they route tasks to each other.
+Create and manage named agent networks (hives) — persistent configs that define which agents run,
+what tools they use, and how they route tasks to each other.
 
 ## Install
 
@@ -65,6 +66,42 @@ CEREBREX_REGISTRY_URL=https://...       # optional — defaults to registry.ther
   "shared_memory": true
 }
 ```
+
+## Swarm Strategies (CLI)
+
+The `cerebrex hive` CLI supports three execution strategies and six built-in presets:
+
+```bash
+cerebrex hive strategies  # list all
+
+# Parallel — all agents get the same task simultaneously
+cerebrex hive swarm best-solution "What caching strategy should we use?"
+
+# Pipeline — sequential refinement (researcher → writer → editor)
+cerebrex hive swarm content-pipeline "Write a post on agent memory"
+
+# Competitive — agents race; Opus picks the winner
+cerebrex hive swarm best-solution "Optimal database indexing strategy?"
+```
+
+| Preset | Strategy | Best for |
+|--------|----------|---------|
+| `research-and-recommend` | pipeline | Deep research with a final recommendation |
+| `code-review-pipeline` | pipeline | Multi-stage code review + security pass |
+| `best-solution` | competitive | Finding the optimal answer among alternatives |
+| `product-spec` | pipeline | PM → Eng → Design spec refinement |
+| `content-pipeline` | pipeline | Research → Draft → Edit workflow |
+| `contract-audit` | parallel | Multi-angle API contract review |
+
+## Risk Gate (CLI Worker)
+
+When running `cerebrex hive worker`, all tasks are classified before execution:
+
+| Risk | Examples | Default |
+|------|---------|---------|
+| LOW | echo, memex-get, read | Always permitted |
+| MEDIUM | fetch, memex-set, write | Permitted (block with `--block-medium-risk`) |
+| HIGH | delete, deploy, send | **Blocked** (permit with `--allow-high-risk`) |
 
 ## Example Usage (via Claude)
 

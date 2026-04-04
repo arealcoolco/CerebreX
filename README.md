@@ -32,16 +32,18 @@ The complete infrastructure layer for AI agents — in one CLI.
 
 CerebreX is an open-source **Agent Infrastructure OS** — the complete toolchain developers need to build reliable, observable, and secure AI agents.
 
-Six modules. One CLI. One registry. One coordination layer.
+Eight modules. One CLI. One registry. One coordination layer.
 
 | Module | Command | Status | What It Does |
 |--------|---------|--------|-------------|
 | 🔨 **FORGE** | `cerebrex build` | ✅ Working | Generate production MCP servers from any OpenAPI spec |
 | 🔍 **TRACE** | `cerebrex trace` | ✅ Working | Record agent execution + visual web dashboard |
-| 🧠 **MEMEX** | `cerebrex memex` | ✅ Working | Persistent memory with SHA-256 integrity + TTL |
-| 🔑 **AUTH** | `cerebrex auth` | ✅ Working | Secure token storage for registry authentication |
+| 🧠 **MEMEX** | `cerebrex memex` | ✅ Working | Local + three-layer cloud memory (KV + R2 + D1) with SHA-256 integrity |
+| 🔑 **AUTH** | `cerebrex auth` | ✅ Working | Secure token storage + risk classification gate on every agent action |
 | 📦 **REGISTRY** | `cerebrex publish` | ✅ Working | Publish and install MCP servers (live registry + web UI) |
-| 🐝 **HIVE** | `cerebrex hive` | ✅ Working | Multi-agent coordination with JWT auth |
+| 🐝 **HIVE** | `cerebrex hive` | ✅ Working | Multi-agent coordination — JWT auth, swarm strategies, risk-gated workers |
+| ⏰ **KAIROS** | *(cloud worker)* | ✅ Working | Autonomous agent daemon — Durable Objects, 5-min tick loop, append-only log |
+| 📋 **ULTRAPLAN** | *(cloud API)* | ✅ Working | Opus deep-thinking plan → human approval → parallel task execution |
 
 ---
 
@@ -185,6 +187,11 @@ cerebrex hive register --id writer     --name "Writer"     --capabilities write,
 cerebrex hive worker --id researcher --token <JWT>
 cerebrex hive worker --id writer     --token <JWT> --handler ./writer-handler.mjs
 
+# Risk-gated workers — HIGH-risk tasks are blocked by default
+cerebrex hive worker --id researcher --token <JWT>                  # blocks fetch, deploy, send
+cerebrex hive worker --id researcher --token <JWT> --allow-high-risk # permits all task types
+cerebrex hive worker --id researcher --token <JWT> --block-medium-risk # LOW only
+
 # 4 — Send tasks — workers pick them up and execute
 cerebrex hive send --agent researcher --type fetch    --payload '{"url":"https://api.example.com/data"}' --token <JWT>
 cerebrex hive send --agent writer     --type memex-get --payload '{"key":"research-results"}' --token <JWT>
@@ -195,13 +202,13 @@ cerebrex hive status
 
 **Built-in task types** (no `--handler` file required):
 
-| Type | Payload | What it does |
-|------|---------|-------------|
-| `fetch` | `{ url, method?, headers?, body? }` | Makes an HTTP request |
-| `memex-set` | `{ key, value, namespace?, ttl? }` | Writes to local MEMEX |
-| `memex-get` | `{ key, namespace? }` | Reads from local MEMEX |
-| `echo` | anything | Returns payload as result |
-| `noop` | anything | Completes immediately |
+| Type | Payload | Risk | What it does |
+|------|---------|------|-------------|
+| `noop` | anything | LOW | Completes immediately |
+| `echo` | anything | LOW | Returns payload as result |
+| `memex-get` | `{ key, namespace? }` | LOW | Reads from local MEMEX |
+| `memex-set` | `{ key, value, namespace?, ttl? }` | MEDIUM | Writes to local MEMEX |
+| `fetch` | `{ url, method?, headers?, body? }` | MEDIUM | Makes an HTTP request |
 
 **Custom handlers** — drop in a JS module when you need more:
 
@@ -220,6 +227,27 @@ export async function execute(task) {
 cerebrex hive worker --id researcher --token <JWT> --handler ./researcher-handler.mjs
 ```
 
+**Swarm strategies** — launch multi-agent presets in one command:
+
+```bash
+# List all strategies and presets
+cerebrex hive strategies
+
+# Run a named preset
+cerebrex hive swarm research-and-recommend "What is the best vector database in 2026?"
+cerebrex hive swarm code-review-pipeline   "Review the auth module for security issues"
+cerebrex hive swarm best-solution          "How should we implement rate limiting?"
+cerebrex hive swarm product-spec           "Design a real-time collaboration feature"
+cerebrex hive swarm content-pipeline       "Write a technical blog post about MCP"
+cerebrex hive swarm contract-audit         "Audit this API contract for breaking changes"
+```
+
+| Strategy | How it works | Best for |
+|----------|-------------|---------|
+| `parallel` | All agents receive the same task via `Promise.all` | Independent subtasks |
+| `pipeline` | Sequential refinement chain — each agent builds on the last | Research → Draft → Edit |
+| `competitive` | Agents race; Opus picks the winner | Finding the optimal answer |
+
 **With TRACE observability** — every task shows up in the visual dashboard:
 
 ```bash
@@ -230,6 +258,67 @@ cerebrex trace view --session my-run --web
 
 HIVE runs a local HTTP coordinator with JWT-signed agent authentication.
 State is persisted to `~/.cerebrex/hive/state.json`.
+
+---
+
+## ⏰ KAIROS — Autonomous Agent Daemon
+
+KAIROS is a cloud-native daemon built on Cloudflare Durable Objects. Each agent gets its own persistent process that wakes on a 5-minute tick, consults Claude to decide whether to act, and logs every decision to an append-only audit trail.
+
+```bash
+# Start a daemon for an agent (via the KAIROS REST API)
+POST /v1/agents/my-agent/daemon/start
+
+# Stop it
+POST /v1/agents/my-agent/daemon/stop
+
+# View the immutable tick history
+GET /v1/agents/my-agent/daemon/log
+
+# Queue a task for the daemon to pick up
+POST /v1/agents/my-agent/tasks
+{ "type": "fetch", "payload": { "url": "https://api.example.com/data" } }
+```
+
+**How it works:**
+
+1. The `KairosDaemon` Durable Object wakes every 5 minutes (configurable via `TICK_INTERVAL_MS`)
+2. It calls Claude with context: agent ID, tick number, pending task count
+3. Claude decides whether to act (queue a proactive task) or stay quiet
+4. The decision, reasoning, and result are written to an append-only D1 log — agents cannot delete their own history
+5. If the Claude API is slow or errors repeatedly, the daemon backs off exponentially (1 min → 30 min cap) before resetting on the next success
+
+---
+
+## 📋 ULTRAPLAN — Deep-Thinking Planning
+
+Submit a high-level goal; Claude Opus produces a comprehensive execution plan; you review and approve it; all tasks queue simultaneously.
+
+```bash
+# Submit a goal
+POST /v1/ultraplan
+{ "goal": "Build a competitive analysis of the top 5 vector databases for our use case" }
+# → { planId: "abc123", status: "planning", message: "Opus is thinking..." }
+
+# Poll until ready (usually 30-60 seconds)
+GET /v1/ultraplan/abc123
+# → { status: "pending", plan: { summary, rationale, tasks, risks, success_criteria } }
+
+# Approve — all tasks queue simultaneously
+POST /v1/ultraplan/abc123/approve
+
+# Or reject
+POST /v1/ultraplan/abc123/reject
+```
+
+The plan JSON contains:
+- `summary` — one-line description
+- `rationale` — why this approach
+- `tasks[]` — array of `{ type, description, payload, priority }` ready to queue
+- `risks[]` — things that could go wrong
+- `success_criteria[]` — how to know the goal was achieved
+
+Goals are capped at 50,000 bytes to prevent runaway Opus calls.
 
 ---
 
@@ -257,19 +346,31 @@ CerebreX/
 │   └── dashboard/        # Standalone trace explorer HTML
 │       └── src/index.html
 ├── workers/
-│   └── registry/         # Cloudflare Worker — live registry backend + Web UI
-│       ├── src/index.ts  # REST API (D1 + KV) + embedded HTML pages
-│       ├── schema.sql    # D1 database schema
+│   ├── registry/         # Cloudflare Worker — live registry backend + Web UI
+│   │   ├── src/index.ts  # REST API (D1 + KV) + embedded HTML pages
+│   │   ├── schema.sql    # D1 database schema
+│   │   └── wrangler.toml
+│   ├── memex/            # Cloudflare Worker — MEMEX v2 three-layer cloud memory
+│   │   ├── src/index.ts  # KV index + R2 topics + D1 transcripts + autoDream cron
+│   │   ├── migrations/   # D1 schema for agents + transcripts tables
+│   │   └── wrangler.toml
+│   └── kairos/           # Cloudflare Worker — KAIROS daemon + ULTRAPLAN
+│       ├── src/index.ts  # KairosDaemon Durable Object + task queue + ULTRAPLAN
+│       ├── migrations/   # D1 schema for daemon_log, tasks, ultraplans
 │       └── wrangler.toml
 ├── packages/
 │   ├── core/             # @cerebrex/core — shared utilities
 │   ├── types/            # @cerebrex/types — shared TypeScript types
-│   └── registry-client/  # @cerebrex/registry — registry API client
+│   ├── registry-client/  # @cerebrex/registry — registry API client
+│   └── system-prompt/    # @cerebrex/system-prompt — master system prompt + MEMEX loader
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml              # build + typecheck on push/PR
 │       ├── publish.yml         # npm publish on GitHub release
-│       └── deploy-registry.yml # auto-deploy registry Worker
+│       ├── deploy-registry.yml # auto-deploy registry Worker
+│       ├── deploy-memex.yml    # auto-deploy MEMEX Worker
+│       ├── deploy-kairos.yml   # auto-deploy KAIROS Worker
+│       └── build-binaries.yml  # build standalone binaries on release
 └── turbo.json
 ```
 
@@ -279,11 +380,20 @@ CerebreX/
 
 Built security-first, aligned with the [OWASP Top 10 for Agentic Applications (2025)](https://genai.owasp.org).
 
-- **Memory Integrity** — All MEMEX writes are SHA-256 checksummed. Reads verify before returning.
-- **Zero Hardcoded Secrets** — `cerebrex validate` scans for hardcoded credentials and blocks deploy.
-- **Input Validation** — Zod schemas validate every tool input in generated MCP servers.
-- **Secure Credentials** — Auth tokens stored at `~/.cerebrex/.credentials` (mode 0600).
-- **JWT Agent Auth** — HIVE uses HMAC-SHA256 signed JWTs for all agent communications.
+| Control | Where | What it does |
+|---------|-------|-------------|
+| **SHA-256 Memory Integrity** | Local MEMEX | All writes checksummed; reads verify before returning |
+| **Timing-Safe Auth** | MEMEX + KAIROS workers | Constant-time XOR comparison prevents timing oracle attacks on API keys |
+| **Risk Classification Gate** | HIVE worker | Every task classified LOW/MEDIUM/HIGH before execution; HIGH blocked by default |
+| **Authenticated Token Issuance** | HIVE coordinator | `POST /token` requires `registration_secret` matching hive config — no unauthenticated token requests |
+| **JWT Hardening** | HIVE coordinator | `sub` claim required + non-empty; exp/nbf/iat all validated |
+| **Input Validation** | Zod (FORGE) + regex (KAIROS/MEMEX) | agentId and topic names restricted to `[a-zA-Z0-9_-]` 1–128 chars — prevents path traversal |
+| **Size Limits** | MEMEX + KAIROS | Transcripts ≤1MB, topics ≤512KB, index ≤25KB, ULTRAPLAN goals ≤50KB |
+| **Zero Hardcoded Secrets** | FORGE validator | Scans generated code and blocks deploy if secrets are hardcoded |
+| **Secure Credentials** | Auth CLI | Tokens stored at `~/.cerebrex/.credentials` (mode 0600); `icacls` hardening on Windows |
+| **Daemon Backoff** | KAIROS | Exponential backoff on consecutive API errors (1 min → 30 min) prevents runaway loops |
+| **Append-Only Audit Log** | KAIROS | Every daemon tick written to D1; agents cannot delete their own history |
+| **Rate Limiting** | MEMEX Worker | `/consolidate` rate-limited to 1 per hour per agent via KV TTL |
 
 Found a vulnerability? Please read our [Security Policy](./SECURITY.md) and report it privately.
 

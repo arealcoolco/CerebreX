@@ -98,17 +98,20 @@ CerebreX/
 ├── apps/
 │   ├── cli/              # The cerebrex CLI tool (this is what users install)
 │   │   ├── src/
-│   │   │   ├── commands/ # One file per CLI command
-│   │   │   └── core/     # FORGE, TRACE, and MEMEX engines
+│   │   │   ├── commands/ # One file per CLI command (build, trace, memex, auth, hive)
+│   │   │   └── core/     # FORGE, TRACE, MEMEX engines + auth/risk-gate
 │   │   └── dist/         # Built output (git-ignored)
 │   └── dashboard/        # Standalone trace explorer HTML
 ├── packages/
-│   ├── core/             # Shared core utilities
-│   ├── types/            # TypeScript type definitions
-│   ├── registry-client/  # Registry API client
+│   ├── core/             # @cerebrex/core — shared utilities
+│   ├── types/            # @cerebrex/types — TypeScript type definitions
+│   ├── registry-client/  # @cerebrex/registry — Registry API client
+│   ├── system-prompt/    # @cerebrex/system-prompt — master system prompt + MEMEX loader
 │   └── */                # Official MCP packages (memex-mcp, hive-mcp, etc.)
 ├── workers/
-│   └── registry/         # Cloudflare Worker — live registry backend + Web UI
+│   ├── registry/         # Cloudflare Worker — live registry backend + Web UI
+│   ├── memex/            # Cloudflare Worker — MEMEX v2 three-layer cloud memory
+│   └── kairos/           # Cloudflare Worker — KAIROS daemon + ULTRAPLAN
 └── .github/              # GitHub Actions, templates
 ```
 
@@ -118,10 +121,15 @@ CerebreX/
 |---------------|-------------|
 | Fix a `cerebrex build` bug | `apps/cli/src/core/forge/` |
 | Fix a `cerebrex trace` bug | `apps/cli/src/core/trace/` |
+| Fix a `cerebrex hive` bug | `apps/cli/src/commands/hive.ts` |
+| Fix the risk gate | `apps/cli/src/core/auth/risk-gate.ts` |
 | Add a new CLI command | `apps/cli/src/commands/` |
 | Fix a type definition | `packages/types/src/` |
 | Fix the registry client | `packages/registry-client/src/` |
-| Update docs | `apps/docs/` |
+| Fix the MEMEX cloud worker | `workers/memex/src/index.ts` |
+| Fix the KAIROS daemon | `workers/kairos/src/index.ts` |
+| Fix the registry backend | `workers/registry/src/index.ts` |
+| Update docs | Root `*.md` files |
 
 ---
 
@@ -231,7 +239,7 @@ CerebreX uses [Conventional Commits](https://www.conventionalcommits.org/).
 
 ### Scopes
 
-`forge`, `trace`, `memex`, `hive`, `registry`, `cli`, `core`, `types`, `docs`, `ci`
+`forge`, `trace`, `memex`, `hive`, `kairos`, `ultraplan`, `registry`, `auth`, `cli`, `core`, `types`, `docs`, `ci`, `security`
 
 ### Examples
 

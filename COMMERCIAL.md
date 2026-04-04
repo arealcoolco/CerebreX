@@ -6,7 +6,7 @@ CerebreX operates on an **open-core** model:
 
 | | License | What's Included |
 |--|---------|----------------|
-| **CerebreX CLI + all packages** | Apache 2.0 | Full CLI, all 5 modules, self-hosted use |
+| **CerebreX CLI + all packages** | Apache 2.0 | Full CLI, all 8 modules (FORGE, TRACE, MEMEX, AUTH, REGISTRY, HIVE, KAIROS, ULTRAPLAN), self-hosted use |
 | **CerebreX Cloud (cerebrex.dev)** | Commercial | Hosted traces, cloud memory, team registry, SLA |
 
 ---

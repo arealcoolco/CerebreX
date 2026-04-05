@@ -2,4 +2,10 @@ name = "therealcool-site"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
-# Route attached manually via Cloudflare dashboard → therealcool.site → therealcool-site worker
+[[routes]]
+pattern = "therealcool.site/*"
+zone_name = "therealcool.site"
+
+[[routes]]
+pattern = "www.therealcool.site/*"
+zone_name = "therealcool.site"

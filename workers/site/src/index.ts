@@ -403,10 +403,11 @@ const HTML = `<!DOCTYPE html>
                 <span class="beta-badge">beta</span>
                 <div class="project-title">cerebrex</div>
                 <div class="project-description">
-                    the open-source MCP registry and agent infrastructure OS for Claude and other AI agents.
-                    browse, install, and publish MCP servers in one command — with a hosted registry, CLI tooling,
-                    and a growing library of official packages for GitHub, NASA, weather, and more.
-                    built for developers who want to extend their AI agents without the overhead.
+                    the open-source Agent Infrastructure OS for Claude and other AI agents — v0.9.1.
+                    8 live modules: registry, CLI tooling, persistent three-layer memory (MEMEX),
+                    multi-agent swarms with risk gating (HIVE), autonomous background daemons (KAIROS),
+                    Opus-powered long-range planning (ULTRAPLAN), observability (TRACE), and scaffolding (FORGE).
+                    built for developers who want production-grade agent infrastructure without the overhead.
                 </div>
                 <div class="test-block">
                     <div class="test-block-label">try it now</div>
@@ -1138,8 +1139,9 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
         <a href="/" class="nav-logo">a real cool co.</a>
         <div class="nav-right">
             <a href="#cerebrex" class="nav-link">modules</a>
+            <a href="#kairos" class="nav-link">kairos</a>
+            <a href="#ultraplan" class="nav-link">ultraplan</a>
             <a href="#proof" class="nav-link">proof</a>
-            <a href="#mission" class="nav-link">mission</a>
             <a href="#access" class="nav-link">access</a>
             <a href="https://github.com/arealcoolco/CerebreX" class="nav-link" target="_blank" rel="noopener">github</a>
         </div>
@@ -1159,8 +1161,8 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             the <em>operating system</em><br>for AI agents.
         </h1>
         <p class="hero-subtitle fade-in delay-4">
-            registry. tooling. memory. auth. orchestration. observability.<br>
-            everything your agents need to work in the real world — in one open-source platform.
+            registry. memory. auth. orchestration. observability. background daemons. long-range planning.<br>
+            8 live modules. everything your agents need to work in the real world — one open-source platform.
         </p>
         <div class="hero-cta fade-in delay-5">
             <a href="#access" class="btn-solid">request early access</a>
@@ -1233,7 +1235,7 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
                 you manage any other dependency. One command. One source of truth. One growing ecosystem.
             </p>
 
-            <div class="section-label reveal" style="margin-top:3rem;" id="modules">the six modules</div>
+            <div class="section-label reveal" style="margin-top:3rem;" id="modules">the eight modules</div>
 
             <div class="module-grid reveal">
                 <div class="module-cell">
@@ -1252,13 +1254,13 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
                     <div class="module-id">03</div>
                     <div class="module-name">MEMEX</div>
                     <span class="module-tag live">live</span>
-                    <div class="module-desc">persistent, structured memory for agents across all sessions.</div>
+                    <div class="module-desc">three-layer persistent memory: KV index + R2 topics + D1 transcripts. nightly autoDream consolidation.</div>
                 </div>
                 <div class="module-cell">
                     <div class="module-id">04</div>
                     <div class="module-name">AUTH</div>
                     <span class="module-tag live">live</span>
-                    <div class="module-desc">zero-trust token auth with granular permission scopes.</div>
+                    <div class="module-desc">zero-trust JWT auth with granular scopes and timing-safe verification.</div>
                 </div>
                 <div class="module-cell">
                     <div class="module-id">05</div>
@@ -1270,7 +1272,19 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
                     <div class="module-id">06</div>
                     <div class="module-name">HIVE</div>
                     <span class="module-tag live">live</span>
-                    <div class="module-desc">multi-agent orchestration with shared memory and roles.</div>
+                    <div class="module-desc">multi-agent swarms with parallel, pipeline, and competitive strategies. risk-gated task execution.</div>
+                </div>
+                <div class="module-cell">
+                    <div class="module-id">07</div>
+                    <div class="module-name">KAIROS</div>
+                    <span class="module-tag live">live</span>
+                    <div class="module-desc">autonomous background daemon with 5-min tick loop, append-only D1 log, and exponential backoff.</div>
+                </div>
+                <div class="module-cell">
+                    <div class="module-id">08</div>
+                    <div class="module-name">ULTRAPLAN</div>
+                    <span class="module-tag live">live</span>
+                    <div class="module-desc">Opus-powered long-range planning → human approval gate → parallel HIVE execution.</div>
                 </div>
             </div>
         </div>
@@ -1405,14 +1419,20 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             </p>
 
             <p class="body-text reveal">
-                MEMEX is the persistent memory layer for CerebreX agents. Structured, queryable,
-                scoped to agents and users — it gives your agents the ability to remember context
-                across sessions, accumulate knowledge over time, and make decisions informed by history.
-                The missing primitive for AI agents that need to do real work.
+                MEMEX v2 is the three-layer persistent memory system for CerebreX agents.
+                A KV index (≤25 KB, sub-millisecond reads) sits in front of R2 topic blobs (≤512 KB, full summaries)
+                backed by D1 append-only transcripts (≤1 MB, complete history). Each layer auto-promotes content
+                by importance, keeping hot context fast and deep history always retrievable.
+            </p>
+
+            <p class="body-text reveal">
+                Every night at 03:00 UTC, <strong>autoDream</strong> fires — a Claude-powered consolidation job that
+                compresses raw transcripts into structured topic memories, prunes stale entries, and surfaces
+                recurring patterns. Your agent wakes up smarter than when it went to sleep.
             </p>
 
             <div class="code-block reveal">
-                <div class="code-block-label">persistent agent memory — live now</div>
+                <div class="code-block-label">three-layer persistent memory — live now</div>
                 <code style="color:rgba(255,255,255,0.5);"># store a memory via CLI</code>
                 <code>cerebrex memex set "project:stack" "next.js, postgres, redis" --namespace dev</code>
                 <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># recall it across any session</code>
@@ -1422,8 +1442,9 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             </div>
 
             <ul class="feature-list">
+                <li><strong>Three-layer architecture</strong> — KV index (fast) → R2 topics (rich) → D1 transcripts (complete)</li>
+                <li><strong>autoDream consolidation</strong> — nightly Claude-powered compression of raw transcripts into structured topics</li>
                 <li><strong>Cross-session persistence</strong> — memories survive restarts, reboots, and re-deployments</li>
-                <li><strong>Structured storage</strong> — typed key-value with semantic tagging and namespace isolation</li>
                 <li><strong>Agent-scoped</strong> — each agent maintains its own memory, with optional sharing across a HIVE</li>
                 <li><strong>TTL support</strong> — memories expire on schedule, keeping the context window relevant</li>
                 <li><strong>Semantic search</strong> — recall memories by meaning, not just by key</li>
@@ -1571,32 +1592,145 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
 
             <p class="body-text reveal">
                 HIVE is the CerebreX multi-agent orchestration layer — live today. Register agents,
-                assign JWT-signed identities, dispatch tasks, and inspect running state from the CLI
-                or through the cloud API at <strong>registry.therealcool.site</strong>.
-                Deploy locally in seconds. Install <strong>@arealcoolco/hive-mcp</strong> to
-                give any AI agent direct access to your HIVE from inside a conversation.
+                assign JWT-signed identities, and coordinate them across three execution strategies:
+                <strong>parallel</strong> (all agents run simultaneously), <strong>pipeline</strong>
+                (output of one feeds the next), and <strong>competitive</strong> (fastest result wins).
+                Six built-in swarm presets let you go from idea to coordinated swarm in one command.
+            </p>
+
+            <p class="body-text reveal">
+                Every task passes through the <strong>risk gate</strong> before execution — automatically
+                classifying each action as LOW, MEDIUM, or HIGH risk and enforcing your policy.
+                High-risk operations require explicit opt-in. Nothing runs without your consent.
             </p>
 
             <div class="code-block reveal">
-                <div class="code-block-label">multi-agent coordination — live now</div>
+                <div class="code-block-label">multi-agent swarms with risk gating — live now</div>
                 <code style="color:rgba(255,255,255,0.5);"># spin up a local coordinator</code>
                 <code>cerebrex hive init --name my-hive && cerebrex hive start</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># register agents with JWT identities</code>
-                <code>cerebrex hive register --id researcher --name "Researcher" --capabilities search,summarize</code>
-                <code>cerebrex hive register --id writer --name "Writer" --capabilities write,edit</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># dispatch tasks</code>
-                <code>cerebrex hive send --agent researcher --type search --payload '{"query":"..."}' --token JWT</code>
+                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># run a parallel swarm (all agents simultaneously)</code>
+                <code>cerebrex hive worker --strategy parallel --concurrency 4</code>
+                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># allow high-risk tasks explicitly</code>
+                <code>cerebrex hive worker --allow-high-risk</code>
                 <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># install the hive-mcp to give Claude access</code>
                 <code>cerebrex install @arealcoolco/hive-mcp</code>
             </div>
 
             <ul class="feature-list">
+                <li><strong>Three swarm strategies</strong> — parallel, pipeline, competitive — chosen per-task or per-preset</li>
+                <li><strong>Six built-in presets</strong> — research, dev, analysis, content, data, monitoring</li>
+                <li><strong>Risk gate</strong> — LOW/MEDIUM/HIGH classification enforced before every task runs</li>
                 <li><strong>JWT agent identity</strong> — every agent in the HIVE holds a signed, scoped JWT token</li>
                 <li><strong>Role assignment</strong> — define each agent's capability set and access scope at registration</li>
-                <li><strong>Task dispatch</strong> — send typed tasks to individual agents; agents report results back</li>
                 <li><strong>State persistence</strong> — HIVE state survives restarts; cloud HIVE backed by D1</li>
                 <li><strong>hive-mcp tool</strong> — install @arealcoolco/hive-mcp to manage your HIVE from inside Claude</li>
                 <li><strong>TRACE integration</strong> — every inter-agent call is observable in the Trace Explorer</li>
+            </ul>
+        </div>
+    </section>
+
+    <div class="glyph-divider">— ✦ —</div>
+
+    <!-- MODULE: KAIROS -->
+    <section id="kairos">
+        <div class="content">
+            <div class="module-header">
+                <div>
+                    <div class="module-number">module 07</div>
+                    <div class="module-title-lg">KAIROS</div>
+                </div>
+                <span class="module-status live">live</span>
+            </div>
+
+            <div class="pull-quote reveal">
+                agents that only work when you're watching<br>
+                aren't agents.<br>
+                <em>they're autocomplete.</em>
+            </div>
+
+            <p class="body-text reveal">
+                KAIROS is the autonomous background daemon for CerebreX. Built on a Cloudflare Durable Object,
+                it runs a <strong>5-minute tick loop</strong> — continuously checking for pending tasks,
+                monitoring conditions, and taking action without being asked. When something goes wrong,
+                KAIROS backs off exponentially: 1 minute → 2 → 4 → up to 30 minutes, then resets on success.
+                Every decision is written to an append-only D1 log for full auditability.
+            </p>
+
+            <p class="body-text reveal">
+                Register a KAIROS daemon, give it a goal, and walk away. It will keep working —
+                making decisions, logging reasoning, and adapting to errors — until you tell it to stop.
+                The first truly autonomous module in the CerebreX stack.
+            </p>
+
+            <div class="code-block reveal">
+                <div class="code-block-label">autonomous background agent — live now</div>
+                <code style="color:rgba(255,255,255,0.5);"># register a KAIROS daemon</code>
+                <code>cerebrex kairos daemon register --agent-id my-agent --goal "Monitor repo activity"</code>
+                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># submit a long-running task</code>
+                <code>cerebrex kairos task submit --agent-id my-agent --type "data_sync" --payload '{}'</code>
+                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># check the decision log</code>
+                <code>cerebrex kairos log --agent-id my-agent --limit 20</code>
+            </div>
+
+            <ul class="feature-list">
+                <li><strong>5-minute tick loop</strong> — runs continuously via Durable Object alarm, no polling needed</li>
+                <li><strong>Exponential backoff</strong> — error ramp from 1 min to 30 min cap; resets on success</li>
+                <li><strong>Append-only D1 log</strong> — every decision, action, and reasoning step persisted forever</li>
+                <li><strong>JSON-validated responses</strong> — tick responses validated as objects before acting</li>
+                <li><strong>Goal size limit</strong> — goals capped at 50 KB to prevent runaway context injection</li>
+                <li><strong>agentId validation</strong> — strict format enforcement prevents injection attacks</li>
+            </ul>
+        </div>
+    </section>
+
+    <div class="glyph-divider">— ✦ —</div>
+
+    <!-- MODULE: ULTRAPLAN -->
+    <section id="ultraplan">
+        <div class="content">
+            <div class="module-header">
+                <div>
+                    <div class="module-number">module 08</div>
+                    <div class="module-title-lg">ULTRAPLAN</div>
+                </div>
+                <span class="module-status live">live</span>
+            </div>
+
+            <div class="pull-quote reveal">
+                big goals need more<br>
+                than a single agent.<br>
+                <em>they need a plan.</em>
+            </div>
+
+            <p class="body-text reveal">
+                ULTRAPLAN is the long-range planning module. It uses <strong>Claude Opus</strong> to decompose
+                a complex goal into a structured execution plan, presents it to a human for approval,
+                then hands the approved tasks off to a HIVE swarm for parallel execution.
+                The human stays in the loop where it matters — at the point of commitment, not just observation.
+            </p>
+
+            <p class="body-text reveal">
+                Goals are capped at 50 KB to prevent context stuffing. The plan is deterministic and auditable.
+                Every subtask produced by ULTRAPLAN inherits the risk gate from HIVE —
+                nothing runs without classification and policy enforcement.
+            </p>
+
+            <div class="code-block reveal">
+                <div class="code-block-label">Opus planning → approval → parallel execution</div>
+                <code style="color:rgba(255,255,255,0.5);"># generate a long-range plan</code>
+                <code>cerebrex ultraplan "Build a REST API for our user database with auth, docs, and tests"</code>
+                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># review the plan (human approval gate)</code>
+                <code style="color:rgba(255,255,255,0.5);"># then confirm to execute across the HIVE</code>
+                <code>cerebrex ultraplan execute --plan-id &lt;id&gt; --approve</code>
+            </div>
+
+            <ul class="feature-list">
+                <li><strong>Opus planning</strong> — Claude Opus decomposes your goal into structured, executable subtasks</li>
+                <li><strong>Human approval gate</strong> — the plan requires explicit confirmation before any execution begins</li>
+                <li><strong>Parallel HIVE execution</strong> — approved tasks fan out across the swarm simultaneously</li>
+                <li><strong>50 KB goal limit</strong> — enforced at the API level, preventing context injection</li>
+                <li><strong>Risk gate inheritance</strong> — every subtask passes through HIVE's risk classification</li>
+                <li><strong>Full auditability</strong> — plan, approval, and execution results all logged to D1</li>
             </ul>
         </div>
     </section>
@@ -1679,6 +1813,30 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
                         </div>
                     </div>
                 </div>
+                <div class="timeline-item">
+                    <div class="timeline-phase">use case 06</div>
+                    <div>
+                        <div class="timeline-title">Autonomous background monitoring with KAIROS</div>
+                        <div class="timeline-desc">
+                            A KAIROS daemon watches your GitHub repo for new issues, classifies them,
+                            and files structured summaries to MEMEX every five minutes — even while you sleep.
+                            When an error spike hits, it escalates and logs the full reasoning chain to D1.
+                            You wake up to a full incident report, not a notification you missed.
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-phase">use case 07</div>
+                    <div>
+                        <div class="timeline-title">Long-range planning with ULTRAPLAN</div>
+                        <div class="timeline-desc">
+                            Feed ULTRAPLAN a complex goal — "migrate our API to GraphQL, add test coverage,
+                            and update the docs." Claude Opus decomposes it into a structured plan.
+                            You review and approve. The HIVE executes all subtasks in parallel.
+                            Human judgment at the point that matters. Agent speed everywhere else.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -1702,7 +1860,7 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
 
             <div class="stat-grid reveal">
                 <div class="stat-cell">
-                    <div class="stat-number">6</div>
+                    <div class="stat-number">8</div>
                     <div class="stat-label">modules live</div>
                 </div>
                 <div class="stat-cell">
@@ -1710,8 +1868,8 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
                     <div class="stat-label">packages in registry</div>
                 </div>
                 <div class="stat-cell">
-                    <div class="stat-number">8</div>
-                    <div class="stat-label">official featured tools</div>
+                    <div class="stat-number">0.9.1</div>
+                    <div class="stat-label">current version</div>
                 </div>
                 <div class="stat-cell">
                     <div class="stat-number">1</div>
@@ -1722,8 +1880,10 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             <ul class="feature-list">
                 <li><strong>Registry is live</strong> — registry.therealcool.site — browse, search, and install without an account</li>
                 <li><strong>CLI on npm</strong> — <code style="font-family:'JetBrains Mono',monospace;font-size:0.85em;">npm install -g cerebrex</code> — install in one command, works today</li>
-                <li><strong>MEMEX cloud API</strong> — agents can store and retrieve cross-session memories via the registry backend</li>
-                <li><strong>HIVE cloud API</strong> — create, manage, and query agent coordination configs from anywhere</li>
+                <li><strong>MEMEX v2</strong> — three-layer memory (KV + R2 + D1) with nightly autoDream consolidation, live on Cloudflare</li>
+                <li><strong>KAIROS daemon</strong> — autonomous background agent with 5-min tick loop and exponential backoff, live on Cloudflare</li>
+                <li><strong>ULTRAPLAN</strong> — Opus-powered planning with human approval gate and parallel HIVE execution</li>
+                <li><strong>HIVE swarms</strong> — parallel, pipeline, and competitive strategies with risk gate and 6 presets</li>
                 <li><strong>8 official MCP packages</strong> — memex-mcp, hive-mcp, fetch-mcp, datetime-mcp, kvstore-mcp, github-mcp, nasa-mcp, openweathermap-mcp</li>
                 <li><strong>Open source</strong> — every line is on GitHub. Fork it. Run it. Own it.</li>
             </ul>

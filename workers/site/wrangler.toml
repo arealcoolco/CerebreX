@@ -2,10 +2,11 @@ name = "therealcool-site"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
-[[routes]]
-pattern = "therealcool.site/*"
-zone_name = "therealcool.site"
-
-[[routes]]
-pattern = "www.therealcool.site/*"
-zone_name = "therealcool.site"
+# Custom domain routing must be set manually in the Cloudflare dashboard.
+# therealcool.site zone lives in a different CF account than this worker.
+# See setup instructions below.
+#
+# To wire therealcool.site → this worker:
+# 1. Go to dash.cloudflare.com → therealcool.site zone → Workers Routes
+# 2. Add route: therealcool.site/*  → therealcool-site
+# 3. Add route: www.therealcool.site/*  → therealcool-site

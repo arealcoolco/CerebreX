@@ -20,6 +20,7 @@ import { deployCommand, validateCommand, publishCommand, installCommand, depreca
 import { memexCommand } from './commands/memex.js';
 import { authCommand } from './commands/auth.js';
 import { hiveCommand } from './commands/hive.js';
+import { benchCommand } from './commands/bench.js';
 
 const VERSION = '0.9.2';
 
@@ -59,6 +60,7 @@ program.addCommand(deprecateCommand);
 program.addCommand(memexCommand);
 program.addCommand(authCommand);
 program.addCommand(hiveCommand);
+program.addCommand(benchCommand);
 
 // ── Handle Unknown Commands ───────────────────────────────────────────────────
 program.on('command:*', (operands) => {

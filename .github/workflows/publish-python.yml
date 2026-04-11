@@ -1,0 +1,55 @@
+name: Publish Python SDK to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (build only, do not publish)'
+        required: false
+        default: 'true'
+
+jobs:
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: sdks/python
+
+    permissions:
+      id-token: write   # Required for PyPI trusted publishing
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tools
+        run: pip install hatch
+
+      - name: Run tests before publish
+        run: |
+          pip install -e ".[dev]"
+          pytest tests/ -v --tb=short
+
+      - name: Build distributions
+        run: hatch build --clean
+
+      - name: Publish to PyPI
+        if: ${{ github.event_name == 'release' || github.event.inputs.dry_run == 'false' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdks/python/dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-sdk-dist
+          path: sdks/python/dist/

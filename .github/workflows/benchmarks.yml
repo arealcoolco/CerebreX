@@ -1,0 +1,70 @@
+name: Benchmarks
+
+on:
+  schedule:
+    # Weekly on Sundays at 02:00 UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Benchmark suite (forge, trace, memex, hive, registry, agents, all)'
+        required: false
+        default: 'all'
+
+jobs:
+  benchmark:
+    name: Run benchmark suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: .
+
+      - name: Run FORGE benchmarks
+        if: ${{ github.event.inputs.suite == 'forge' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        run: bun benchmarks/forge-bench.ts
+
+      - name: Run TRACE benchmarks
+        if: ${{ github.event.inputs.suite == 'trace' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        run: bun benchmarks/trace-bench.ts
+
+      - name: Run MEMEX benchmarks (local)
+        if: ${{ github.event.inputs.suite == 'memex' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        run: bun benchmarks/memex-bench.ts
+
+      - name: Run HIVE benchmarks
+        if: ${{ github.event.inputs.suite == 'hive' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        run: bun benchmarks/hive-bench.ts
+
+      - name: Run Registry benchmarks (local)
+        if: ${{ github.event.inputs.suite == 'registry' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        run: bun benchmarks/registry-bench.ts
+
+      - name: Run agent task benchmarks (dry-run)
+        if: ${{ github.event.inputs.suite == 'agents' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        run: bun benchmarks/agent-tasks-bench.ts
+
+      - name: Run live MEMEX benchmarks
+        if: ${{ github.event.inputs.suite == 'memex' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        env:
+          MEMEX_URL: ${{ secrets.MEMEX_URL }}
+          CEREBREX_API_KEY: ${{ secrets.CEREBREX_API_KEY }}
+        run: bun benchmarks/memex-bench.ts
+        continue-on-error: true
+
+      - name: Run live agent task benchmarks
+        if: ${{ github.event.inputs.suite == 'agents' || github.event.inputs.suite == 'all' || github.event.inputs.suite == '' }}
+        env:
+          MEMEX_URL: ${{ secrets.MEMEX_URL }}
+          CEREBREX_API_KEY: ${{ secrets.CEREBREX_API_KEY }}
+        run: bun benchmarks/agent-tasks-bench.ts
+        continue-on-error: true

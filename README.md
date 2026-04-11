@@ -19,7 +19,7 @@ The complete infrastructure layer for AI agents — in one CLI.
 
 ---
 
-> **Status: v0.9.1 — Security hardening patch: risk gate integrated, JWT auth on token endpoint, KAIROS backoff + validation**
+> **Status: v0.9.2 — Benchmark suite (forge/trace/memex/hive/registry + `cerebrex bench`), Python SDK (pip install cerebrex), npm homepage fix**
 > `npm install -g cerebrex` — or download a self-contained binary from [GitHub Releases](https://github.com/arealcoolco/CerebreX/releases) (no Node.js required)
 >
 > **Live:** Registry UI → `https://registry.therealcool.site`
@@ -333,6 +333,64 @@ The CerebreX registry includes a browser-based UI served directly from the Worke
 
 ---
 
+## 📊 Benchmarks
+
+```bash
+# Run all local benchmarks (no network needed)
+cerebrex bench
+
+# Run a specific suite
+cerebrex bench --suite forge
+cerebrex bench --suite memex
+cerebrex bench --suite hive
+
+# Or run the full benchmark suite directly with Bun
+bun benchmarks/forge-bench.ts
+bun benchmarks/memex-bench.ts
+bun benchmarks/hive-bench.ts
+bun benchmarks/registry-bench.ts
+bun benchmarks/agent-tasks-bench.ts   # cross-framework comparison
+
+# Live benchmarks (require running workers)
+MEMEX_URL=https://memex.your.workers.dev CEREBREX_API_KEY=cx-... bun benchmarks/memex-bench.ts
+```
+
+Benchmarks report **p50/p95/p99 latency, throughput (ops/s), and success rate** using `performance.now()` — 200 iterations, 20 warmup runs by default. The CI pipeline runs the full suite weekly (Sundays 02:00 UTC).
+
+---
+
+## 🐍 Python SDK
+
+```bash
+pip install cerebrex
+```
+
+```python
+import asyncio
+from cerebrex import CerebreXClient
+
+async def main():
+    async with CerebreXClient(api_key="cx-your-key") as client:
+        # Write to agent memory
+        await client.memex.write_index("my-agent", "# Memory\n- learned today")
+
+        # Assemble a system prompt from all three memory layers
+        ctx = await client.memex.assemble_context("my-agent", topics=["context"])
+
+        # Search the registry
+        results = await client.registry.search("web-search")
+
+        # Submit a KAIROS task
+        task = await client.kairos.submit_task("my-agent", "fetch",
+            payload={"url": "https://api.example.com/data"})
+
+asyncio.run(main())
+```
+
+See [sdks/python/README.md](sdks/python/README.md) for the full SDK reference including ULTRAPLAN, TRACE, LangChain integration, and CrewAI integration.
+
+---
+
 ## 🗂 Monorepo Structure
 
 ```
@@ -340,11 +398,28 @@ CerebreX/
 ├── apps/
 │   ├── cli/              # cerebrex CLI — the main published package
 │   │   ├── src/
-│   │   │   ├── commands/ # build, trace, memex, auth, hive, other-commands
+│   │   │   ├── commands/ # build, trace, memex, auth, hive, bench, other-commands
 │   │   │   └── core/     # forge/, trace/, memex/ engines + dashboard
 │   │   └── dist/         # built output (git-ignored, built by CI)
 │   └── dashboard/        # Standalone trace explorer HTML
 │       └── src/index.html
+├── benchmarks/           # Performance benchmark suite (local + live)
+│   ├── forge-bench.ts    # FORGE pipeline timing
+│   ├── trace-bench.ts    # TRACE step recording throughput
+│   ├── memex-bench.ts    # Three-layer MEMEX operations
+│   ├── hive-bench.ts     # Swarm coordination + risk gate
+│   ├── registry-bench.ts # Package search + metadata
+│   ├── agent-tasks-bench.ts  # Cross-framework comparison scaffold
+│   └── src/
+│       ├── stats.ts      # p50/p95/p99 helpers
+│       ├── types.ts      # BenchmarkResult type
+│       ├── reporters/    # console, json, markdown reporters
+│       └── adapters/     # cerebrex adapter (5 standardized tasks)
+├── sdks/
+│   └── python/           # Python async SDK (pip install cerebrex)
+│       ├── src/cerebrex/ # CerebreXClient + module sub-clients
+│       ├── tests/        # pytest test suite with pytest-httpx mocks
+│       └── examples/     # quickstart, langchain_integration, crewai_integration
 ├── workers/
 │   ├── registry/         # Cloudflare Worker — live registry backend + Web UI
 │   │   ├── src/index.ts  # REST API (D1 + KV) + embedded HTML pages
@@ -370,7 +445,10 @@ CerebreX/
 │       ├── deploy-registry.yml # auto-deploy registry Worker
 │       ├── deploy-memex.yml    # auto-deploy MEMEX Worker
 │       ├── deploy-kairos.yml   # auto-deploy KAIROS Worker
-│       └── build-binaries.yml  # build standalone binaries on release
+│       ├── build-binaries.yml  # build standalone binaries on release
+│       ├── benchmarks.yml      # weekly benchmark suite (Sundays 02:00 UTC)
+│       ├── test-python.yml     # Python SDK tests (3.10, 3.11, 3.12)
+│       └── publish-python.yml  # publish cerebrex to PyPI on release
 └── turbo.json
 ```
 
@@ -449,6 +527,8 @@ cd apps/cli && bun run build
 - [x] HIVE swarm strategies — parallel, pipeline, competitive + 6 built-in presets *(v0.9)*
 - [x] `@cerebrex/system-prompt` — master system prompt package + live MEMEX context loader *(v0.9)*
 - [x] Security hardening — risk gate wired into HIVE worker, JWT /token endpoint authenticated, KAIROS exponential backoff + JSON validation, agentId injection prevention *(v0.9.1)*
+- [x] Benchmark suite — p50/p95/p99, forge/trace/memex/hive/registry + cross-framework agent tasks + `cerebrex bench` CLI command *(v0.9.2)*
+- [x] Python SDK — async httpx client, Pydantic v2, full module coverage, LangChain + CrewAI integrations *(v0.9.2)*
 - [ ] Agent test runner — `cerebrex test` with replay + assertions *(v1.0)*
 - [ ] Custom domain *(next)*
 - [ ] Enterprise tier + on-prem *(v1.0)*

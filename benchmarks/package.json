@@ -1,0 +1,24 @@
+{
+  "name": "@cerebrex/benchmarks",
+  "version": "0.9.2",
+  "private": true,
+  "description": "CerebreX benchmark suite — infrastructure and cross-framework agent task benchmarks",
+  "type": "module",
+  "scripts": {
+    "bench:forge": "bun src/runner.ts forge",
+    "bench:trace": "bun src/runner.ts trace",
+    "bench:memex": "bun src/runner.ts memex",
+    "bench:hive": "bun src/runner.ts hive",
+    "bench:registry": "bun src/runner.ts registry",
+    "bench:agents": "bun src/runner.ts agents",
+    "bench:all": "bun src/runner.ts all",
+    "bench:ci": "bun src/runner.ts all --reporter json --out results/latest.json"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2"
+  },
+  "devDependencies": {
+    "@cerebrex/types": "workspace:*",
+    "typescript": "^5.0.0"
+  }
+}

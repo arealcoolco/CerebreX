@@ -592,7 +592,7 @@ async function registryUI(env: Env): Promise<string> {
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>CerebreX — agent infrastructure os</title>
+  <title>CerebreX Project Example</title>
   <link rel="manifest" href="/manifest.json"/>
   <meta name="theme-color" content="#00d4ff"/>
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -1119,9 +1119,20 @@ async function registryUI(env: Env): Promise<string> {
 
 <div id="scroll-bar"></div>
 
+<!-- INTRO BANNER -->
+<div style="position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(0,0,0,0.92);border-top:1px solid rgba(255,255,255,0.15);backdrop-filter:blur(16px);padding:0.75rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;" id="intro-banner">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:rgba(255,255,255,0.6);letter-spacing:0.05em;">
+    <span style="color:#fff;font-weight:700;">cerebrex project example</span> — this is a live demo of all 8 CerebreX modules running in production. try everything.
+  </div>
+  <div style="display:flex;gap:0.75rem;align-items:center;flex-shrink:0;">
+    <a href="https://therealcool.site/whitepaper" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:rgba(255,255,255,0.5);text-decoration:none;letter-spacing:0.05em;border:1px solid rgba(255,255,255,0.2);padding:0.3rem 0.75rem;transition:all 0.2s;" onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.5)';" onmouseout="this.style.color='rgba(255,255,255,0.5)';this.style.borderColor='rgba(255,255,255,0.2)';">read whitepaper</a>
+    <button onclick="document.getElementById('intro-banner').style.display='none';" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer;letter-spacing:0.05em;">dismiss</button>
+  </div>
+</div>
+
 <!-- NAV -->
 <nav>
-  <a class="nav-logo" href="/">cerebrex</a>
+  <a class="nav-logo" href="/">cerebrex / project example</a>
   <div class="nav-links">
     <a href="#forge">[forge]</a>
     <a href="#trace">[trace]</a>
@@ -1144,7 +1155,7 @@ async function registryUI(env: Env): Promise<string> {
  ██║     ██╔══╝  ██╔══██╗██╔══╝  ██╔══██╗██╔══██╗ ██╔██╗
  ╚██████╗███████╗██║  ██║███████╗██████╔╝██║  ██║██╔╝ ██╗
   ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝</pre>
-  <div class="hero-sub">the agent infrastructure os — v0.9.1 — 8 modules live</div>
+  <div class="hero-sub">cerebrex project example — v0.9.2 — every module, live in your browser</div>
   <div class="hero-pills">
     <a class="hero-pill live" href="#forge">forge</a>
     <a class="hero-pill live" href="#trace">trace</a>
@@ -1588,8 +1599,10 @@ async function registryUI(env: Env): Promise<string> {
 
 <!-- FOOTER -->
 <footer>
-  <div>cerebrex v0.9.1 &mdash; a real cool co. &mdash; registry.therealcool.site</div>
+  <div>cerebrex project example &mdash; v0.9.2 &mdash; a real cool co.</div>
   <div style="margin-top:10px;display:flex;justify-content:center;gap:20px;flex-wrap:wrap">
+    <a href="https://therealcool.site" target="_blank">home</a>
+    <a href="https://therealcool.site/whitepaper" target="_blank">whitepaper</a>
     <a href="https://github.com/arealcoolco/CerebreX" target="_blank">github</a>
     <a href="https://www.npmjs.com/package/cerebrex" target="_blank">npm</a>
     <a href="/v1/packages" target="_blank">api</a>

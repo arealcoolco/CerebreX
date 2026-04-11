@@ -403,23 +403,23 @@ const HTML = `<!DOCTYPE html>
                 <span class="beta-badge">beta</span>
                 <div class="project-title">cerebrex</div>
                 <div class="project-description">
-                    the open-source Agent Infrastructure OS for Claude and other AI agents — v0.9.1.
-                    8 live modules: registry, CLI tooling, persistent three-layer memory (MEMEX),
-                    multi-agent swarms with risk gating (HIVE), autonomous background daemons (KAIROS),
-                    Opus-powered long-range planning (ULTRAPLAN), observability (TRACE), and scaffolding (FORGE).
-                    built for developers who want production-grade agent infrastructure without the overhead.
+                    the open-source Agent Infrastructure OS for Claude and other AI agents — v0.9.2.
+                    8 live modules: FORGE, TRACE, MEMEX, KAIROS, HIVE, AUTH, REGISTRY, ULTRAPLAN.
+                    <strong style="color:rgba(255,255,255,0.9)">26× faster startup than LangChain. 42× faster than CrewAI.</strong>
+                    Python SDK live. built for developers who want production-grade agent infrastructure without the overhead.
                 </div>
                 <div class="test-block">
                     <div class="test-block-label">try it now</div>
                     <code>npm install -g cerebrex</code>
-                    <code>cerebrex install @arealcoolco/github-mcp</code>
-                    <code>cerebrex configure @arealcoolco/github-mcp --env GITHUB_TOKEN=your_token</code>
+                    <code>cerebrex memex set my-agent "agent initialized" --key context</code>
+                    <code>cerebrex kairos start my-agent --interval 300000</code>
                 </div>
                 <div class="cta-row">
-                    <a href="__WHITEPAPER_URL__" class="btn-primary">get early access →</a>
-                    <a href="https://github.com/arealcoolco/CerebreX" class="btn-ghost" target="_blank" rel="noopener">view on github</a>
+                    <a href="__WHITEPAPER_URL__" class="btn-primary">read the whitepaper →</a>
+                    <a href="https://registry.therealcool.site" class="btn-ghost" target="_blank" rel="noopener">try it live</a>
+                    <a href="https://github.com/arealcoolco/CerebreX" class="btn-ghost" target="_blank" rel="noopener">github</a>
                 </div>
-                <div style="margin-top:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;color:rgba(255,255,255,0.35);text-transform:uppercase;">click tile to explore the full vision →</div>
+                <div style="margin-top:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;color:rgba(255,255,255,0.35);text-transform:uppercase;">click tile to read the full whitepaper →</div>
             </div>
         </div>
     </div>
@@ -544,19 +544,21 @@ const HTML = `<!DOCTYPE html>
 
 
 // ─────────────────────────────────────────────
-// WHITEPAPER PAGE — IMMERSIVE SCROLL EXPERIENCE
+
+// ─────────────────────────────────────────────
+// WHITEPAPER PAGE — CEREBREX TECHNICAL DOCUMENT
 // ─────────────────────────────────────────────
 const WHITEPAPER_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CerebreX — The Agent Infrastructure OS</title>
+    <title>CerebreX Whitepaper — The Agent Infrastructure OS</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000'/%3E%3Ctext x='50' y='65' font-family='monospace' font-size='60' fill='%23fff' text-anchor='middle'%3E✦%3C/text%3E%3C/svg%3E">
-    <meta name="description" content="A Real Cool Co. — a stealth studio building cutting-edge AI infrastructure through an Afro Futurist lens. CerebreX: the open-source Agent Infrastructure OS.">
+    <meta name="description" content="CerebreX Whitepaper — the complete technical specification for the open-source Agent Infrastructure OS. Architecture, benchmarks, modules, and SDK documentation.">
     <meta name="robots" content="index, follow">
-    <meta property="og:title" content="CerebreX — Agent Infrastructure OS">
-    <meta property="og:description" content="The registry, CLI, and platform layer for AI agents. Built by A Real Cool Co.">
+    <meta property="og:title" content="CerebreX Whitepaper — Agent Infrastructure OS">
+    <meta property="og:description" content="The complete technical document. 8 modules, real benchmarks, and a Python SDK. Built by A Real Cool Co.">
     <meta property="og:type" content="website">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet">
     <style>
@@ -566,6 +568,7 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             --off-white: #f0ede6;
             --dim: rgba(255,255,255,0.5);
             --dimmer: rgba(255,255,255,0.25);
+            --dimmest: rgba(255,255,255,0.12);
             --rule: rgba(255,255,255,0.1);
         }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -576,146 +579,160 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
         }
-
-        /* ── PROGRESS BAR ── */
-        #progress {
-            position: fixed; top: 0; left: 0; height: 2px;
-            background: var(--white); width: 0%; z-index: 1000;
-            transition: width 0.1s linear;
-            box-shadow: 0 0 8px rgba(255,255,255,0.6);
-        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
 
         /* ── SCANLINES ── */
         body::before {
             content:'';
             position:fixed; top:0; left:0; width:100%; height:100%;
-            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.008) 3px, rgba(255,255,255,0.008) 4px);
+            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.006) 3px, rgba(255,255,255,0.006) 4px);
             pointer-events:none; z-index:900;
+        }
+
+        /* ── PROGRESS BAR ── */
+        #progress {
+            position: fixed; top: 0; left: 0; height: 2px;
+            background: var(--white); width: 0%; z-index: 1000;
+            box-shadow: 0 0 8px rgba(255,255,255,0.5);
         }
 
         /* ── NAV ── */
         nav {
             position: fixed; top: 0; left: 0; right: 0;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 1.5rem 3rem;
+            padding: 0 2.5rem; height: 52px;
             border-bottom: 1px solid var(--rule);
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.92);
             backdrop-filter: blur(20px);
             z-index: 50;
         }
         .nav-logo {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.8rem; font-weight: 700;
-            text-transform: lowercase; letter-spacing: 0.1em;
+            text-transform: lowercase; letter-spacing: 0.08em;
             text-decoration: none; color: var(--white);
-            opacity: 0.8; transition: opacity 0.2s;
         }
-        .nav-logo:hover { opacity: 1; }
-        .nav-right {
-            display: flex; gap: 2rem; align-items: center;
+        .nav-links {
+            display: flex; gap: 0; align-items: center;
         }
-        .nav-link {
+        .nav-links a {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem; text-transform: lowercase;
-            letter-spacing: 0.08em; color: var(--dim);
-            text-decoration: none; transition: color 0.2s;
+            font-size: 0.7rem; text-transform: lowercase;
+            letter-spacing: 0.06em; color: var(--dim);
+            text-decoration: none; padding: 0 1rem;
+            border-left: 1px solid var(--rule);
+            transition: color 0.2s; line-height: 52px;
         }
-        .nav-link:hover { color: var(--white); }
+        .nav-links a:hover { color: var(--white); }
+        .nav-links a.active { color: var(--white); }
+        .nav-links .nav-cta {
+            color: var(--white);
+            border: 1px solid rgba(255,255,255,0.35);
+            border-left: 1px solid rgba(255,255,255,0.35);
+            margin-left: 1rem; padding: 0.4rem 1rem; line-height: normal;
+            transition: all 0.2s;
+        }
+        .nav-links .nav-cta:hover { background: rgba(255,255,255,0.08); }
+        @media (max-width: 700px) {
+            .nav-links { display: none; }
+        }
 
         /* ── HERO ── */
         .hero {
             min-height: 100vh;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            padding: 8rem 3rem 6rem;
+            padding: 8rem 2rem 6rem;
             text-align: center;
             position: relative;
             border-bottom: 1px solid var(--rule);
         }
         .hero-eyebrow {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.72rem; text-transform: uppercase;
-            letter-spacing: 0.25em; color: var(--dim);
+            font-size: 0.68rem; text-transform: uppercase;
+            letter-spacing: 0.3em; color: var(--dimmer);
             margin-bottom: 2.5rem;
+            display: flex; align-items: center; gap: 1.5rem;
         }
-        .hero-mark {
-            font-size: 5rem; line-height: 1; margin-bottom: 3rem;
-            animation: markPulse 6s ease-in-out infinite;
-            display: block;
-        }
-        @keyframes markPulse {
-            0%,100% { text-shadow: 0 0 40px rgba(255,255,255,0.15); }
-            50% { text-shadow: 0 0 80px rgba(255,255,255,0.4), 0 0 120px rgba(255,255,255,0.1); }
+        .hero-eyebrow::before, .hero-eyebrow::after {
+            content: ''; flex: 0 0 40px; height: 1px; background: var(--rule);
         }
         .hero-title {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(2.8rem, 7vw, 6rem);
-            font-weight: 900; line-height: 1.05;
+            font-size: clamp(3rem, 8vw, 6.5rem);
+            font-weight: 900; line-height: 1.02;
             letter-spacing: -0.02em;
             max-width: 900px;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
-        .hero-title em {
-            font-style: italic; color: var(--dim);
-        }
-        .hero-subtitle {
+        .hero-title em { font-style: italic; color: var(--dim); }
+        .hero-thesis {
             font-family: 'Inter', sans-serif;
-            font-size: clamp(1rem, 2vw, 1.25rem);
-            font-weight: 300; line-height: 1.7;
-            color: var(--dim); max-width: 600px;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            font-weight: 300; line-height: 1.75;
+            color: var(--dim); max-width: 620px;
             margin-bottom: 3.5rem;
         }
+        .hero-stats {
+            display: flex; gap: 3rem; align-items: center; justify-content: center;
+            flex-wrap: wrap; margin-bottom: 3.5rem;
+        }
+        .hero-stat {
+            text-align: center;
+        }
+        .hero-stat-num {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem; font-weight: 900; line-height: 1;
+            margin-bottom: 0.3rem;
+        }
+        .hero-stat-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem; text-transform: uppercase;
+            letter-spacing: 0.2em; color: var(--dim);
+        }
+        .hero-divider {
+            width: 1px; height: 40px; background: var(--rule);
+        }
         .hero-cta {
-            display: flex; gap: 1.2rem; align-items: center; justify-content: center; flex-wrap: wrap;
+            display: flex; gap: 1rem; align-items: center; justify-content: center; flex-wrap: wrap;
         }
         .btn-solid {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.82rem; font-weight: 700;
             text-transform: lowercase; letter-spacing: 0.08em;
-            padding: 0.9rem 2.2rem;
+            padding: 0.85rem 2rem;
             background: var(--white); color: var(--black);
             border: 2px solid var(--white);
             text-decoration: none; transition: all 0.25s ease;
             display: inline-block;
         }
-        .btn-solid:hover {
-            background: transparent; color: var(--white);
-            box-shadow: 0 0 30px rgba(255,255,255,0.3);
-        }
+        .btn-solid:hover { background: transparent; color: var(--white); box-shadow: 0 0 30px rgba(255,255,255,0.25); }
         .btn-outline {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.82rem; font-weight: 400;
             text-transform: lowercase; letter-spacing: 0.08em;
-            padding: 0.9rem 2.2rem;
+            padding: 0.85rem 2rem;
             background: transparent; color: var(--dim);
             border: 1px solid rgba(255,255,255,0.3);
             text-decoration: none; transition: all 0.25s ease;
             display: inline-block;
         }
-        .btn-outline:hover {
-            border-color: var(--white); color: var(--white);
-            box-shadow: 0 0 20px rgba(255,255,255,0.15);
-        }
+        .btn-outline:hover { border-color: var(--white); color: var(--white); box-shadow: 0 0 20px rgba(255,255,255,0.12); }
         .scroll-hint {
             position: absolute; bottom: 2.5rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.65rem; text-transform: uppercase;
-            letter-spacing: 0.2em; color: var(--dimmer);
+            font-size: 0.6rem; text-transform: uppercase;
+            letter-spacing: 0.25em; color: var(--dimmer);
             display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
             animation: bounceDown 2s ease-in-out infinite;
         }
-        @keyframes bounceDown {
-            0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)}
-        }
+        @keyframes bounceDown { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
 
-        /* ── CONTENT WRAPPER ── */
-        .content {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
+        /* ── CONTENT ── */
+        .content { max-width: 760px; margin: 0 auto; padding: 0 2rem; }
 
-        /* ── SECTIONS ── */
         section {
             padding: 7rem 0;
             border-bottom: 1px solid var(--rule);
@@ -724,25 +741,21 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
 
         .section-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.68rem; text-transform: uppercase;
-            letter-spacing: 0.25em; color: var(--dimmer);
+            font-size: 0.65rem; text-transform: uppercase;
+            letter-spacing: 0.28em; color: var(--dimmer);
             margin-bottom: 3rem;
             display: flex; align-items: center; gap: 1rem;
         }
-        .section-label::after {
-            content: ''; flex: 1; height: 1px;
-            background: var(--rule);
-        }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
 
         /* ── PULL QUOTE ── */
         .pull-quote {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(1.6rem, 4vw, 2.6rem);
-            font-weight: 400; line-height: 1.3;
-            letter-spacing: -0.01em;
+            font-size: clamp(1.5rem, 3.5vw, 2.4rem);
+            font-weight: 400; line-height: 1.35;
             margin: 3rem 0;
             padding-left: 2rem;
-            border-left: 2px solid rgba(255,255,255,0.4);
+            border-left: 2px solid rgba(255,255,255,0.35);
             color: var(--off-white);
         }
         .pull-quote em { font-style: italic; color: var(--dim); }
@@ -750,37 +763,46 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
         /* ── BODY TEXT ── */
         .body-text {
             font-size: 1.05rem; font-weight: 300;
-            line-height: 1.85; color: rgba(255,255,255,0.78);
+            line-height: 1.88; color: rgba(255,255,255,0.75);
             margin-bottom: 1.75rem;
         }
-        .body-text strong {
-            font-weight: 600; color: var(--white);
+        .body-text strong { font-weight: 600; color: var(--white); }
+        .body-text code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em; background: rgba(255,255,255,0.07);
+            padding: 0.1em 0.4em; border-radius: 2px;
         }
 
-        /* ── MANIFESTO LINES ── */
-        .manifesto {
-            margin: 3.5rem 0;
+        /* ── CODE BLOCK ── */
+        .code-block {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+            position: relative;
         }
-        .manifesto-line {
-            font-family: 'Inter', sans-serif;
-            font-size: clamp(1rem, 2.5vw, 1.4rem);
-            font-weight: 700; line-height: 1.4;
-            padding: 1.2rem 0;
-            border-bottom: 1px solid var(--rule);
-            display: flex; align-items: flex-start; gap: 1.5rem;
-            opacity: 0;
-            transform: translateX(-20px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-        .manifesto-line.visible {
-            opacity: 1; transform: translateX(0);
-        }
-        .manifesto-line .num {
+        .code-block-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem; font-weight: 400;
-            color: var(--dimmer); padding-top: 0.3rem;
-            min-width: 1.8rem;
+            font-size: 0.6rem; text-transform: uppercase;
+            letter-spacing: 0.2em; color: var(--dimmer);
+            margin-bottom: 0.75rem;
         }
+        .code-block code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem; line-height: 1.7;
+            color: rgba(255,255,255,0.8);
+            display: block; white-space: pre;
+        }
+        .copy-btn {
+            position: absolute; top: 1rem; right: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em;
+            background: none; border: 1px solid var(--rule);
+            color: var(--dimmer); padding: 0.25rem 0.6rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .copy-btn:hover { border-color: rgba(255,255,255,0.4); color: var(--white); }
 
         /* ── STAT GRID ── */
         .stat-grid {
@@ -797,244 +819,93 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
         .stat-cell:nth-last-child(-n+2) { border-bottom: none; }
         .stat-number {
             font-family: 'Playfair Display', serif;
-            font-size: 3rem; font-weight: 900;
-            line-height: 1; margin-bottom: 0.5rem;
+            font-size: 3rem; font-weight: 900; line-height: 1;
+            margin-bottom: 0.4rem;
         }
         .stat-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem; text-transform: uppercase;
+            font-size: 0.68rem; text-transform: uppercase;
             letter-spacing: 0.15em; color: var(--dim);
         }
-
-        /* ── TIMELINE ── */
-        .timeline { margin: 3rem 0; }
-        .timeline-item {
-            display: grid; grid-template-columns: 120px 1fr;
-            gap: 2rem; padding: 2rem 0;
-            border-bottom: 1px solid var(--rule);
-            opacity: 0; transform: translateY(16px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-        .timeline-item.visible { opacity: 1; transform: translateY(0); }
-        .timeline-phase {
+        .stat-sub {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem; text-transform: uppercase;
-            letter-spacing: 0.15em; color: var(--dimmer);
-            padding-top: 0.2rem;
+            font-size: 0.62rem; color: var(--dimmer);
+            margin-top: 0.3rem;
         }
-        .timeline-title {
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem; font-weight: 700;
-            margin-bottom: 0.5rem;
+
+        /* ── COMPARISON TABLE ── */
+        .compare-table {
+            width: 100%; border-collapse: collapse;
+            margin: 2.5rem 0; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
         }
-        .timeline-desc {
-            font-size: 0.9rem; font-weight: 300;
-            line-height: 1.65; color: rgba(255,255,255,0.6);
+        .compare-table th {
+            text-transform: uppercase; letter-spacing: 0.15em;
+            font-size: 0.62rem; color: var(--dimmer);
+            padding: 0.75rem 1rem; text-align: left;
+            border-bottom: 1px solid var(--rule);
         }
-        .timeline-badge {
-            display: inline-block;
+        .compare-table th:first-child { padding-left: 0; }
+        .compare-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.7);
+        }
+        .compare-table td:first-child { padding-left: 0; color: var(--white); font-weight: 700; }
+        .compare-table td.yes { color: var(--white); }
+        .compare-table td.no { color: var(--dimmer); }
+        .compare-table tr.highlight td { color: var(--white); }
+
+        /* ── MODULE CARD ── */
+        .module-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1px; background: var(--rule);
+            border: 1px solid var(--rule);
+            margin: 3rem 0;
+        }
+        .module-card {
+            background: var(--black);
+            padding: 2rem;
+            transition: background 0.2s;
+        }
+        .module-card:hover { background: rgba(255,255,255,0.02); }
+        .module-card-id {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.6rem; text-transform: uppercase;
-            letter-spacing: 0.12em;
-            border: 1px solid rgba(255,255,255,0.35);
-            padding: 0.15rem 0.6rem; margin-bottom: 0.5rem;
-            color: rgba(255,255,255,0.6);
-        }
-        .timeline-badge.active {
-            border-color: var(--white);
-            color: var(--white);
-            background: rgba(255,255,255,0.06);
-        }
-
-        /* ── CODE BLOCK ── */
-        .code-block {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.12);
-            padding: 1.5rem 1.75rem;
-            margin: 2rem 0;
-        }
-        .code-block-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.62rem; text-transform: uppercase;
             letter-spacing: 0.2em; color: var(--dimmer);
             margin-bottom: 0.75rem;
+            display: flex; align-items: center; gap: 0.5rem;
         }
-        .code-block code {
+        .module-badge {
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 0.1rem 0.4rem;
+            font-size: 0.55rem; letter-spacing: 0.1em;
+            color: var(--dim);
+        }
+        .module-badge.live { border-color: var(--white); color: var(--white); }
+        .module-card-name {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.88rem; color: rgba(255,255,255,0.85);
-            display: block; line-height: 1.9;
+            font-size: 1.2rem; font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.6rem;
         }
+        .module-card-desc {
+            font-size: 0.82rem; font-weight: 300;
+            line-height: 1.65; color: rgba(255,255,255,0.55);
+        }
+        @media (max-width: 550px) { .module-grid { grid-template-columns: 1fr; } }
 
-        /* ── ACCESS SECTION ── */
-        .access-section {
-            text-align: center;
-            padding: 7rem 0;
+        /* ── MODULE DEEP DIVE ── */
+        .module-header {
+            display: flex; align-items: flex-start; gap: 1.5rem;
+            margin-bottom: 3rem;
         }
-        .access-title {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 900; line-height: 1.1;
-            margin-bottom: 1.5rem;
-        }
-        .access-sub {
-            font-size: 1rem; font-weight: 300;
-            line-height: 1.7; color: var(--dim);
-            max-width: 480px; margin: 0 auto 3rem;
-        }
-        .email-form {
-            display: flex; gap: 0; max-width: 480px; margin: 0 auto;
-            border: 1px solid rgba(255,255,255,0.4);
-        }
-        .email-form input {
-            flex: 1; background: transparent; border: none; outline: none;
-            color: var(--white); padding: 1rem 1.25rem;
-            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
-            caret-color: var(--white);
-        }
-        .email-form input::placeholder { color: var(--dimmer); }
-        .email-form button {
-            background: var(--white); color: var(--black);
-            border: none; padding: 1rem 1.75rem; cursor: pointer;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.82rem; font-weight: 700;
-            text-transform: lowercase; letter-spacing: 0.08em;
-            transition: all 0.25s ease; white-space: nowrap;
-        }
-        .email-form button:hover { background: var(--off-white); }
-        .form-note {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.68rem; color: var(--dimmer);
-            margin-top: 1rem; letter-spacing: 0.05em;
-        }
-
-        /* ── FOOTER ── */
-        footer {
-            padding: 3rem;
-            border-top: 1px solid var(--rule);
-            display: flex; align-items: center; justify-content: space-between;
-            flex-wrap: wrap; gap: 1rem;
-        }
-        .footer-left {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.72rem; color: var(--dimmer);
-            letter-spacing: 0.06em;
-        }
-        .footer-right {
-            display: flex; gap: 2rem;
-        }
-        .footer-link {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.72rem; color: var(--dimmer);
-            text-decoration: none; letter-spacing: 0.06em;
-            transition: color 0.2s;
-        }
-        .footer-link:hover { color: var(--white); }
-
-        /* ── DIVIDER ── */
-        .divider {
-            display: flex; align-items: center; gap: 2rem;
-            margin: 4rem 0;
-        }
-        .divider span {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem; color: var(--dimmer);
-        }
-        .divider::before, .divider::after {
-            content: ''; flex: 1; height: 1px;
-            background: var(--rule);
-        }
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 768px) {
-            nav { padding: 1.25rem 1.5rem; }
-            .nav-right { gap: 1.2rem; }
-            .hero { padding: 7rem 1.5rem 5rem; }
-            .hero-mark { font-size: 3.5rem; }
-            section { padding: 4.5rem 0; }
-            .content { padding: 0 1.5rem; }
-            .stat-grid { grid-template-columns: 1fr; }
-            .stat-cell { border-right: none; }
-            .stat-cell:nth-last-child(-n+2) { border-bottom: 1px solid var(--rule); }
-            .stat-cell:last-child { border-bottom: none; }
-            .timeline-item { grid-template-columns: 1fr; gap: 0.5rem; }
-            .timeline-phase { padding-top: 0; }
-            .email-form { flex-direction: column; }
-            .email-form input, .email-form button { width: 100%; }
-            footer { flex-direction: column; padding: 2rem 1.5rem; }
-        }
-
-        /* ── MODULE GRID ── */
-        .module-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 0; margin: 3rem 0;
-            border: 1px solid var(--rule);
-        }
-        .module-cell {
-            padding: 1.75rem 1.5rem;
-            border-right: 1px solid var(--rule);
-            border-bottom: 1px solid var(--rule);
-            transition: background 0.3s ease;
-        }
-        .module-cell:nth-child(3n) { border-right: none; }
-        .module-cell:nth-last-child(-n+3) { border-bottom: none; }
-        .module-cell:hover { background: rgba(255,255,255,0.04); }
-        .module-id {
+        .module-num {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.6rem; text-transform: uppercase;
             letter-spacing: 0.2em; color: var(--dimmer);
-            margin-bottom: 0.6rem;
-        }
-        .module-name {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem; font-weight: 700;
-            margin-bottom: 0.4rem;
-        }
-        .module-tag {
-            display: inline-block;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.55rem; text-transform: uppercase;
-            letter-spacing: 0.12em;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 0.1rem 0.5rem; color: var(--dim);
-        }
-        .module-tag.live { border-color: rgba(255,255,255,0.6); color: var(--white); }
-        .module-desc {
-            font-size: 0.82rem; font-weight: 300;
-            line-height: 1.6; color: var(--dim);
-            margin-top: 0.6rem;
-        }
-
-        /* ── FEATURE LIST ── */
-        .feature-list {
-            margin: 2rem 0; list-style: none;
-        }
-        .feature-list li {
-            display: flex; align-items: flex-start; gap: 1rem;
-            padding: 0.75rem 0; border-bottom: 1px solid var(--rule);
-            font-size: 0.95rem; font-weight: 300;
-            line-height: 1.6; color: rgba(255,255,255,0.75);
-            opacity: 0; transform: translateX(-12px);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-        }
-        .feature-list li.visible { opacity: 1; transform: translateX(0); }
-        .feature-list li::before {
-            content: '→';
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem; color: var(--dimmer);
-            padding-top: 0.15rem; flex-shrink: 0;
-        }
-        .feature-list li strong { color: var(--white); font-weight: 600; }
-
-        /* ── MODULE HEADER ── */
-        .module-header {
-            display: flex; align-items: center; gap: 1.5rem;
-            margin-bottom: 3.5rem;
-        }
-        .module-number {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.65rem; text-transform: uppercase;
-            letter-spacing: 0.2em; color: var(--dimmer);
-            white-space: nowrap;
+            padding-top: 0.5rem; white-space: nowrap;
         }
         .module-title-lg {
             font-family: 'JetBrains Mono', monospace;
@@ -1043,23 +914,34 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
         }
         .module-status {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.6rem; text-transform: uppercase;
+            font-size: 0.58rem; text-transform: uppercase;
             letter-spacing: 0.15em;
             border: 1px solid rgba(255,255,255,0.25);
-            padding: 0.2rem 0.6rem; color: var(--dim);
-            white-space: nowrap; align-self: flex-start; margin-top: 0.5rem;
+            padding: 0.18rem 0.55rem; color: var(--dim);
+            white-space: nowrap; align-self: flex-start; margin-top: 0.6rem;
         }
         .module-status.live { border-color: var(--white); color: var(--white); }
 
-        /* ── SECTION DIVIDER WITH GLYPH ── */
-        .glyph-divider {
-            text-align: center; padding: 4rem 0;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem; letter-spacing: 0.3em;
-            text-transform: uppercase; color: var(--dimmer);
+        /* ── FEATURE LIST ── */
+        .feature-list { margin: 2rem 0; list-style: none; }
+        .feature-list li {
+            display: flex; align-items: flex-start; gap: 1rem;
+            padding: 0.75rem 0; border-bottom: 1px solid var(--rule);
+            font-size: 0.95rem; font-weight: 300;
+            line-height: 1.6; color: rgba(255,255,255,0.72);
+            opacity: 0; transform: translateX(-12px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
+        .feature-list li.visible { opacity: 1; transform: translateX(0); }
+        .feature-list li::before {
+            content: '→';
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem; color: var(--dimmer);
+            padding-top: 0.15rem; flex-shrink: 0;
+        }
+        .feature-list li strong { color: var(--white); font-weight: 600; }
 
-        /* ── QUICKSTART STEPS ── */
+        /* ── STEPS ── */
         .steps { margin: 2rem 0; }
         .step {
             display: grid; grid-template-columns: 3rem 1fr;
@@ -1072,899 +954,706 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
         .step-num {
             font-family: 'JetBrains Mono', monospace;
             font-size: 1.5rem; font-weight: 700;
-            color: rgba(255,255,255,0.15); line-height: 1;
-            padding-top: 0.1rem;
+            color: rgba(255,255,255,0.12); line-height: 1;
         }
-        .step-content {}
-        .step-title {
-            font-size: 0.95rem; font-weight: 600;
-            margin-bottom: 0.4rem;
-        }
+        .step-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; }
         .step-code {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.82rem; color: rgba(255,255,255,0.7);
+            font-size: 0.8rem; color: rgba(255,255,255,0.65);
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.08);
-            padding: 0.5rem 0.75rem; margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem; margin-top: 0.4rem;
             display: block;
         }
 
-        /* ── REVEAL ANIMATION ── */
+        /* ── GLYPH DIVIDER ── */
+        .glyph-divider {
+            text-align: center; padding: 4rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem; letter-spacing: 0.35em;
+            text-transform: uppercase; color: var(--dimmer);
+        }
+
+        /* ── MANIFESTO ── */
+        .manifesto { margin: 3.5rem 0; }
+        .manifesto-line {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(1rem, 2.5vw, 1.35rem);
+            font-weight: 700; line-height: 1.4;
+            padding: 1.2rem 0;
+            border-bottom: 1px solid var(--rule);
+            display: flex; align-items: flex-start; gap: 1.5rem;
+            opacity: 0; transform: translateX(-20px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+        .manifesto-line.visible { opacity: 1; transform: translateX(0); }
+        .manifesto-line .num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem; font-weight: 400;
+            color: var(--dimmer); padding-top: 0.3rem; min-width: 1.8rem;
+        }
+
+        /* ── REVEAL ── */
         .reveal {
             opacity: 0; transform: translateY(24px);
             transition: opacity 0.7s ease, transform 0.7s ease;
         }
         .reveal.visible { opacity: 1; transform: translateY(0); }
 
-        @keyframes fadeSlideUp {
-            from { opacity:0; transform:translateY(30px); }
-            to { opacity:1; transform:translateY(0); }
+        /* ── ACCESS FORM ── */
+        .access-form {
+            display: flex; gap: 0; margin: 2.5rem 0;
         }
-        .fade-in { opacity:0; animation: fadeSlideUp 0.8s ease forwards; }
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.25s; }
-        .delay-3 { animation-delay: 0.4s; }
-        .delay-4 { animation-delay: 0.55s; }
-        .delay-5 { animation-delay: 0.7s; }
+        .access-form input {
+            flex: 1; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-right: none;
+            color: var(--white); font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem; padding: 0.85rem 1rem;
+            outline: none;
+        }
+        .access-form input::placeholder { color: var(--dimmer); }
+        .access-form input:focus { border-color: rgba(255,255,255,0.5); }
+        .access-form button {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem; font-weight: 700;
+            text-transform: lowercase; letter-spacing: 0.08em;
+            background: var(--white); color: var(--black);
+            border: none; padding: 0.85rem 1.5rem;
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .access-form button:hover { background: rgba(255,255,255,0.85); }
+        .access-form button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        @media (max-width: 768px) {
-            nav { padding: 1.25rem 1.5rem; }
-            .nav-right { gap: 1rem; }
-            .hero { padding: 7rem 1.5rem 5rem; }
-            .hero-mark { font-size: 3.5rem; }
-            section { padding: 4.5rem 0; }
-            .content { padding: 0 1.5rem; }
-            .module-grid { grid-template-columns: 1fr; }
-            .module-cell { border-right: none; }
-            .module-cell:nth-last-child(-n+3) { border-bottom: 1px solid var(--rule); }
-            .module-cell:last-child { border-bottom: none; }
+        /* ── FOOTER ── */
+        footer {
+            padding: 4rem 0; text-align: center;
+            border-top: 1px solid var(--rule);
+        }
+        .footer-links {
+            display: flex; gap: 2rem; justify-content: center;
+            flex-wrap: wrap; margin-bottom: 2rem;
+        }
+        .footer-links a {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem; text-transform: lowercase;
+            letter-spacing: 0.08em; color: var(--dimmer);
+            text-decoration: none; transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--white); }
+        .footer-copy {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem; color: var(--dimmest);
+            letter-spacing: 0.1em;
+        }
+
+        @media (max-width: 600px) {
+            .hero-stats { gap: 1.5rem; }
+            .hero-divider { display: none; }
             .stat-grid { grid-template-columns: 1fr; }
             .stat-cell { border-right: none; }
+            .stat-cell:nth-child(even) { border-right: none; }
             .stat-cell:nth-last-child(-n+2) { border-bottom: 1px solid var(--rule); }
             .stat-cell:last-child { border-bottom: none; }
-            .timeline-item { grid-template-columns: 1fr; gap: 0.5rem; }
-            .module-header { flex-direction: column; gap: 0.75rem; }
-            .email-form { flex-direction: column; }
-            .email-form input, .email-form button { width: 100%; }
-            footer { flex-direction: column; padding: 2rem 1.5rem; }
-            .step { grid-template-columns: 2rem 1fr; gap: 1rem; }
+            .access-form { flex-direction: column; }
+            .access-form input { border-right: 1px solid rgba(255,255,255,0.25); border-bottom: none; }
+            .compare-table { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
     <div id="progress"></div>
 
-    <!-- NAV -->
     <nav>
-        <a href="/" class="nav-logo">a real cool co.</a>
-        <div class="nav-right">
-            <a href="#cerebrex" class="nav-link">modules</a>
-            <a href="#kairos" class="nav-link">kairos</a>
-            <a href="#ultraplan" class="nav-link">ultraplan</a>
-            <a href="#proof" class="nav-link">proof</a>
-            <a href="#access" class="nav-link">access</a>
-            <a href="https://github.com/arealcoolco/CerebreX" class="nav-link" target="_blank" rel="noopener">github</a>
+        <a href="/" class="nav-logo">cerebrex</a>
+        <div class="nav-links">
+            <a href="#problem">problem</a>
+            <a href="#architecture">architecture</a>
+            <a href="#benchmarks">benchmarks</a>
+            <a href="#sdk">sdk</a>
+            <a href="#quickstart">quickstart</a>
+            <a href="https://registry.therealcool.site" class="nav-cta" target="_blank" rel="noopener">try it live →</a>
         </div>
     </nav>
 
-    <!-- HERO -->
+    <!-- ── HERO ── -->
     <div class="hero">
-        <p class="hero-eyebrow fade-in delay-1">a real cool co. × cerebrex — the agent infrastructure os</p>
-        <pre class="fade-in delay-2" style="font-family:'JetBrains Mono',monospace;font-size:clamp(0.4rem,1.1vw,0.75rem);line-height:1.1;white-space:pre;text-align:center;margin:2rem 0;color:rgba(255,255,255,0.9);text-shadow:0 0 20px rgba(255,255,255,0.5),0 0 40px rgba(255,255,255,0.2);">
- ██████╗███████╗██████╗ ███████╗██████╗ ██████╗ ███████╗██╗  ██╗
-██╔════╝██╔════╝██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔════╝╚██╗██╔╝
-██║     █████╗  ██████╔╝█████╗  ██████╔╝██████╔╝█████╗   ╚███╔╝
-██║     ██╔══╝  ██╔══██╗██╔══╝  ██╔══██╗██╔══██╗██╔══╝   ██╔██╗
-╚██████╗███████╗██║  ██║███████╗██████╔╝██║  ██║███████╗██╔╝ ██╗
- ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝</pre>
-        <h1 class="hero-title fade-in delay-3">
-            the <em>operating system</em><br>for AI agents.
-        </h1>
-        <p class="hero-subtitle fade-in delay-4">
-            registry. memory. auth. orchestration. observability. background daemons. long-range planning.<br>
-            8 live modules. everything your agents need to work in the real world — one open-source platform.
+        <div class="hero-eyebrow">whitepaper — v0.9.2</div>
+        <h1 class="hero-title">The Agent Infrastructure <em>OS</em></h1>
+        <p class="hero-thesis">
+            AI agents are powerful. The infrastructure around them is broken.
+            CerebreX is the open-source operating system that gives every agent
+            persistent memory, autonomous scheduling, multi-agent coordination,
+            end-to-end observability, and a package ecosystem —
+            all in one coherent platform.
         </p>
-        <div class="hero-cta fade-in delay-5">
-            <a href="#access" class="btn-solid">request early access</a>
-            <a href="#cerebrex" class="btn-outline">read the docs →</a>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="hero-stat-num">8</div>
+                <div class="hero-stat-label">live modules</div>
+            </div>
+            <div class="hero-divider"></div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">26×</div>
+                <div class="hero-stat-label">faster than LangChain</div>
+            </div>
+            <div class="hero-divider"></div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">0.01ms</div>
+                <div class="hero-stat-label">memory read latency</div>
+            </div>
+            <div class="hero-divider"></div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">27k</div>
+                <div class="hero-stat-label">trace ops / sec</div>
+            </div>
+        </div>
+        <div class="hero-cta">
+            <a href="https://registry.therealcool.site" class="btn-solid" target="_blank" rel="noopener">try it live →</a>
+            <a href="#quickstart" class="btn-outline">quickstart</a>
+            <a href="https://github.com/arealcoolco/CerebreX" class="btn-outline" target="_blank" rel="noopener">github</a>
         </div>
         <div class="scroll-hint">
-            <span>scroll to explore</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 11L3 5h10L8 11z"/>
-            </svg>
+            <span>scroll</span>
+            <svg width="12" height="16" viewBox="0 0 12 16" fill="none"><path d="M6 1v12M1 9l5 5 5-5" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
     </div>
 
-    <!-- STUDIO -->
-    <section id="studio">
+    <!-- ── THE PROBLEM ── -->
+    <section id="problem">
         <div class="content">
-            <div class="section-label reveal">00 — the studio</div>
-
+            <div class="section-label">01 — the problem</div>
             <div class="pull-quote reveal">
-                we don't do press releases.<br>
-                we do <em>proof of work.</em>
+                Every team building AI agents reinvents the same infrastructure. <em>Over and over again.</em>
             </div>
-
             <p class="body-text reveal">
-                <strong>A Real Cool Co.</strong> is a stealth studio. We don't announce things before they exist.
-                We build first. We ship. We let the work carry the weight of the introduction.
-                There are no decks. There is no pitch. There is just the thing we made,
-                and the question it asks of the world.
+                The current generation of agent frameworks — LangChain, CrewAI, AutoGen, Semantic Kernel —
+                solved the right problem at the wrong layer. They gave developers chains, crews, and graphs.
+                But they left the hard parts completely exposed: <strong>where does memory persist between sessions?
+                How does an agent act while you're asleep? What happens when two agents need to coordinate
+                without stepping on each other? Who owns the package ecosystem?</strong>
             </p>
-
             <p class="body-text reveal">
-                We are building at the intersection of Afro Futurism and artificial intelligence —
-                the belief that technology is not neutral, and that the people who build the tools
-                determine the shape of the future. We intend to be in that room. Not as observers. As architects.
+                The result is every engineering team spending weeks building the same bespoke infrastructure:
+                a custom memory layer bolted to Redis or Postgres, a cron job that half-works, a hand-rolled
+                message bus for multi-agent coordination, a Datadog dashboard that never quite shows what you need.
+                This work is expensive, fragile, and completely duplicated across the industry.
             </p>
-
-            <div class="manifesto reveal">
-                <div class="manifesto-line"><span class="num">01</span><span>Technology is not neutral. It reflects who builds it, and why.</span></div>
-                <div class="manifesto-line"><span class="num">02</span><span>The future belongs to those who build it without waiting for permission.</span></div>
-                <div class="manifesto-line"><span class="num">03</span><span>Making things that matter is more important than making things that trend.</span></div>
-                <div class="manifesto-line"><span class="num">04</span><span>Infrastructure is culture. The tools we give people shape what they imagine is possible.</span></div>
-                <div class="manifesto-line"><span class="num">05</span><span>Stealth is not secrecy. It is the discipline of building before broadcasting.</span></div>
-                <div class="manifesto-line"><span class="num">06</span><span>AI is the most significant creative and technical medium of our generation.</span></div>
-                <div class="manifesto-line"><span class="num">07</span><span>We will not be spectators to the future being built around us. We will be its architects.</span></div>
+            <div class="manifesto">
+                <div class="manifesto-line">
+                    <span class="num">01</span>
+                    <span>Frameworks give you chains. Nobody gives you the OS underneath.</span>
+                </div>
+                <div class="manifesto-line">
+                    <span class="num">02</span>
+                    <span>Agents have no persistent memory. Every session starts from zero.</span>
+                </div>
+                <div class="manifesto-line">
+                    <span class="num">03</span>
+                    <span>Agents stop working the moment you close your laptop.</span>
+                </div>
+                <div class="manifesto-line">
+                    <span class="num">04</span>
+                    <span>Multi-agent coordination is solved differently by every team.</span>
+                </div>
+                <div class="manifesto-line">
+                    <span class="num">05</span>
+                    <span>There is no shared package registry for agent tooling. There should be.</span>
+                </div>
             </div>
+            <p class="body-text reveal">
+                CerebreX is the answer. Not another framework. An <strong>operating system</strong> for agents —
+                the layer that sits beneath your LLM calls and above your cloud infrastructure,
+                providing every service an agent needs to be production-ready on day one.
+            </p>
         </div>
     </section>
 
-    <!-- WHAT IS CEREBREX -->
-    <section id="cerebrex">
+    <!-- ── ARCHITECTURE ── -->
+    <section id="architecture">
         <div class="content">
-            <div class="section-label reveal">01 — what is cerebrex</div>
-
-            <div class="pull-quote reveal">
-                the problem with AI tooling is not intelligence.<br>
-                <em>it's infrastructure.</em>
-            </div>
-
+            <div class="section-label">02 — architecture</div>
+            <h2 class="reveal" style="font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:900;line-height:1.1;margin-bottom:2rem;">Eight modules. One coherent OS.</h2>
             <p class="body-text reveal">
-                AI agents are capable of extraordinary things. But connecting them to the real world —
-                to GitHub, to databases, to your internal APIs — requires custom wiring that developers build
-                from scratch, every time. The same integrations get built by a hundred different teams.
-                None of them talk to each other. None of them share the work.
+                CerebreX is structured as eight production-ready modules, each deployable independently
+                but designed to work as an integrated system. Every module is a Cloudflare Worker with
+                its own D1 database, KV namespace, and Durable Object — stateful, globally distributed,
+                zero cold-start infrastructure.
             </p>
-
-            <p class="body-text reveal">
-                <strong>CerebreX is the open-source Agent Infrastructure OS.</strong> A registry, CLI, and
-                platform layer that gives AI agents everything they need to operate in the real world.
-                Browse, install, publish, and configure MCP (Model Context Protocol) servers the same way
-                you manage any other dependency. One command. One source of truth. One growing ecosystem.
-            </p>
-
-            <div class="section-label reveal" style="margin-top:3rem;" id="modules">the eight modules</div>
 
             <div class="module-grid reveal">
-                <div class="module-cell">
-                    <div class="module-id">01</div>
-                    <div class="module-name">FORGE</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">scaffold new MCP tools from battle-tested templates in seconds.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>01</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">FORGE</div>
+                    <div class="module-card-desc">MCP server scaffolding. Turn an OpenAPI spec into a deployed, validated MCP server in under 60 seconds.</div>
                 </div>
-                <div class="module-cell">
-                    <div class="module-id">02</div>
-                    <div class="module-name">TRACE</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">real-time observability for every MCP call your agent makes.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>02</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">TRACE</div>
+                    <div class="module-card-desc">Agent observability. Record every decision, tool call, and LLM response with structured step logging at 27,435 ops/sec.</div>
                 </div>
-                <div class="module-cell">
-                    <div class="module-id">03</div>
-                    <div class="module-name">MEMEX</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">three-layer persistent memory: KV index + R2 topics + D1 transcripts. nightly autoDream consolidation.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>03</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">MEMEX</div>
+                    <div class="module-card-desc">Three-layer persistent memory: index (facts), topics (structured knowledge), and transcripts (session history). 0.01ms reads.</div>
                 </div>
-                <div class="module-cell">
-                    <div class="module-id">04</div>
-                    <div class="module-name">AUTH</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">zero-trust JWT auth with granular scopes and timing-safe verification.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>04</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">AUTH</div>
+                    <div class="module-card-desc">Token-scoped API key management. Per-agent authentication with full audit trail and CLI-based key rotation.</div>
                 </div>
-                <div class="module-cell">
-                    <div class="module-id">05</div>
-                    <div class="module-name">REGISTRY</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">the npm for agent tools — browse, publish, install, version.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>05</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">REGISTRY</div>
+                    <div class="module-card-desc">The npm for MCP servers. Publish, discover, and install agent tooling. Open to browse — no account required.</div>
                 </div>
-                <div class="module-cell">
-                    <div class="module-id">06</div>
-                    <div class="module-name">HIVE</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">multi-agent swarms with parallel, pipeline, and competitive strategies. risk-gated task execution.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>06</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">HIVE</div>
+                    <div class="module-card-desc">Multi-agent coordination with risk gating. Swarms of agents that self-organize, share memory, and vote before destructive actions.</div>
                 </div>
-                <div class="module-cell">
-                    <div class="module-id">07</div>
-                    <div class="module-name">KAIROS</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">autonomous background daemon with 5-min tick loop, append-only D1 log, and exponential backoff.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>07</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">KAIROS</div>
+                    <div class="module-card-desc">Autonomous background daemons. Agents that run on a 5-minute tick loop — deciding whether to act or stay quiet — while you're offline.</div>
                 </div>
-                <div class="module-cell">
-                    <div class="module-id">08</div>
-                    <div class="module-name">ULTRAPLAN</div>
-                    <span class="module-tag live">live</span>
-                    <div class="module-desc">Opus-powered long-range planning → human approval gate → parallel HIVE execution.</div>
+                <div class="module-card">
+                    <div class="module-card-id"><span>08</span><span class="module-badge live">live</span></div>
+                    <div class="module-card-name">ULTRAPLAN</div>
+                    <div class="module-card-desc">Opus-powered long-range planning. Decompose a goal into an approved task graph. Human-in-the-loop before any action is taken.</div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: FORGE -->
-    <section id="forge">
-        <div class="content">
+            <!-- FORGE -->
+            <div class="glyph-divider">✦ ── module 01 ── ✦</div>
             <div class="module-header">
+                <div class="module-num">01 / 08</div>
                 <div>
-                    <div class="module-number">module 01</div>
                     <div class="module-title-lg">FORGE</div>
+                    <div class="module-status live">live — scaffolding engine</div>
                 </div>
-                <span class="module-status live">live</span>
             </div>
-
-            <div class="pull-quote reveal">
-                stop writing boilerplate.<br>
-                <em>start building tools.</em>
-            </div>
-
+            <div class="pull-quote reveal">From spec to deployed MCP server in under 60 seconds.</div>
             <p class="body-text reveal">
-                Every MCP server starts the same way — package.json, tsconfig, tool schema definitions,
-                test scaffolding, a publish config. Developers repeat this setup across every new project.
-                FORGE eliminates that friction entirely.
+                FORGE is the scaffolding engine. Feed it an OpenAPI specification —
+                a YAML or JSON file describing your API's endpoints, methods, and schemas —
+                and it generates a fully-typed, validated MCP server ready to deploy on Cloudflare Workers.
+                No boilerplate. No manual glue code.
             </p>
-
-            <p class="body-text reveal">
-                One command scaffolds a fully wired MCP server with the correct structure, TypeScript config,
-                schema validation, and a test suite ready to run. You start at the point where the actual
-                work begins — writing the tool logic — not wrestling with project setup.
-            </p>
-
             <div class="code-block reveal">
-                <div class="code-block-label">scaffold a new MCP server</div>
-                <code>cerebrex forge my-weather-tool</code>
-                <code style="color:rgba(255,255,255,0.4);margin-top:0.5rem;"># creates:</code>
-                <code style="color:rgba(255,255,255,0.5);">my-weather-tool/</code>
-                <code style="color:rgba(255,255,255,0.5);">  ├── src/index.ts     # tool implementation</code>
-                <code style="color:rgba(255,255,255,0.5);">  ├── src/schema.ts    # tool schema + types</code>
-                <code style="color:rgba(255,255,255,0.5);">  ├── tests/           # test suite</code>
-                <code style="color:rgba(255,255,255,0.5);">  ├── package.json     # pre-configured</code>
-                <code style="color:rgba(255,255,255,0.5);">  └── tsconfig.json    # ready to compile</code>
+                <div class="code-block-label">bash — generate a server</div>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+                <code>cerebrex build --spec ./my-api.yaml --name my-agent-server
+# → validates spec (7 checks)
+# → generates MCP server scaffold
+# → writes to ./dist/my-agent-server/
+# → deploys to Cloudflare Workers (optional)</code>
             </div>
-
             <ul class="feature-list">
-                <li><strong>Template library</strong> — starter templates for REST APIs, databases, file systems, and more</li>
-                <li><strong>Schema validation</strong> — tool definitions pre-wired with Zod validation and type inference</li>
-                <li><strong>Test scaffold</strong> — test suite with mock MCP client included from day one</li>
-                <li><strong>Publish-ready</strong> — package.json pre-configured for cerebrex publish</li>
-                <li><strong>TypeScript first</strong> — tsconfig, strict types, and build scripts included by default</li>
+                <li><strong>OpenAPI 3.x support</strong> — parse and validate any standard spec</li>
+                <li><strong>Type-safe generation</strong> — TypeScript output with full type inference</li>
+                <li><strong>7-point validation</strong> — checks required fields, path integrity, auth schemes</li>
+                <li><strong>One-command deploy</strong> — wrangler integration included out of the box</li>
+                <li><strong>MCP-native output</strong> — tools, resources, and prompts generated automatically</li>
             </ul>
-        </div>
-    </section>
 
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: TRACE -->
-    <section id="trace">
-        <div class="content">
+            <!-- TRACE -->
+            <div class="glyph-divider">✦ ── module 02 ── ✦</div>
             <div class="module-header">
+                <div class="module-num">02 / 08</div>
                 <div>
-                    <div class="module-number">module 02</div>
                     <div class="module-title-lg">TRACE</div>
+                    <div class="module-status live">live — observability</div>
                 </div>
-                <span class="module-status live">live</span>
             </div>
-
-            <div class="pull-quote reveal">
-                every call your agent makes.<br>
-                every token it uses.<br>
-                <em>every error it throws.</em>
-            </div>
-
+            <div class="pull-quote reveal">27,435 ops/sec. Every decision logged. Nothing lost.</div>
             <p class="body-text reveal">
-                When an AI agent fails, you need to know why. Which MCP tool was called?
-                What parameters did it pass? What did the server return? How long did it take?
-                Without visibility into these calls, debugging is guesswork.
+                TRACE is the observability layer. Every agent action — tool calls, LLM responses,
+                decisions, errors — is recorded as a structured step in an append-only session log.
+                Sessions are retrievable by agent ID, time window, or outcome. The TRACE server
+                runs locally on port 7432 and is accessible via the registry UI or CLI.
             </p>
-
-            <p class="body-text reveal">
-                TRACE gives you a real-time execution dashboard for every MCP call your agents make.
-                Run it locally during development, or use the hosted Trace Explorer at
-                <strong>registry.therealcool.site/trace</strong> to inspect live agent sessions from anywhere.
-            </p>
-
             <div class="code-block reveal">
-                <div class="code-block-label">start tracing agent calls</div>
-                <code>cerebrex trace --live</code>
-                <code style="color:rgba(255,255,255,0.4);margin-top:0.5rem;"># or pipe from your agent output:</code>
-                <code>my-agent | cerebrex trace --pipe</code>
-                <code style="color:rgba(255,255,255,0.4);margin-top:0.5rem;"># hosted explorer:</code>
-                <code>open https://registry.therealcool.site/trace</code>
+                <div class="code-block-label">python — recording steps</div>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+                <code>from cerebrex import CerebreXClient
+
+async with CerebreXClient(api_key="cx-...") as client:
+    session_id = await client.trace.create_session("my-agent")
+    await client.trace.record_step(
+        session_id, "tool_call",
+        input={"tool": "web_search", "query": "CerebreX"},
+        output={"results": [...]},
+        duration_ms=312,
+    )</code>
             </div>
-
             <ul class="feature-list">
-                <li><strong>Real-time dashboard</strong> — watch MCP calls stream in as your agent executes</li>
-                <li><strong>Full request/response</strong> — see every parameter sent and every result returned</li>
-                <li><strong>Latency tracking</strong> — identify slow tools and bottlenecks in your pipeline</li>
-                <li><strong>Error surface</strong> — exceptions, timeouts, and schema violations highlighted immediately</li>
-                <li><strong>Hosted Explorer</strong> — shareable trace sessions for async debugging and collaboration</li>
-                <li><strong>Session replay</strong> — re-run a captured trace to reproduce issues exactly</li>
+                <li><strong>27,435 ops/sec</strong> — zero-overhead structured logging at production scale</li>
+                <li><strong>Session grouping</strong> — correlate steps across multi-turn agent conversations</li>
+                <li><strong>Browser viewer</strong> — drag-and-drop trace files at registry.therealcool.site</li>
+                <li><strong>Structured output</strong> — every step has typed input, output, and duration_ms</li>
+                <li><strong>CLI access</strong> — <code>cerebrex trace list</code> and <code>cerebrex trace view &lt;id&gt;</code></li>
             </ul>
-        </div>
-    </section>
 
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: MEMEX -->
-    <section id="memex">
-        <div class="content">
+            <!-- MEMEX -->
+            <div class="glyph-divider">✦ ── module 03 ── ✦</div>
             <div class="module-header">
+                <div class="module-num">03 / 08</div>
                 <div>
-                    <div class="module-number">module 03</div>
                     <div class="module-title-lg">MEMEX</div>
+                    <div class="module-status live">live — persistent memory</div>
                 </div>
-                <span class="module-status live">live</span>
             </div>
-
-            <div class="pull-quote reveal">
-                agents that can't remember<br>
-                can't <em>learn.</em>
-            </div>
-
+            <div class="pull-quote reveal">Agents forget. MEMEX remembers.</div>
             <p class="body-text reveal">
-                Every conversation with an AI agent starts from zero. It has no memory of what it did
-                yesterday, no context about your project, no recollection of decisions already made.
-                For simple tasks, this is fine. For anything complex — building software, managing workflows,
-                running ongoing processes — it is a fundamental limitation.
+                MEMEX is the memory layer — a three-tier persistent knowledge store that survives
+                between sessions, across restarts, and through context window resets. It gives
+                agents the ability to build up knowledge over time, not just within a single conversation.
             </p>
-
             <p class="body-text reveal">
-                MEMEX v2 is the three-layer persistent memory system for CerebreX agents.
-                A KV index (≤25 KB, sub-millisecond reads) sits in front of R2 topic blobs (≤512 KB, full summaries)
-                backed by D1 append-only transcripts (≤1 MB, complete history). Each layer auto-promotes content
-                by importance, keeping hot context fast and deep history always retrievable.
+                The three tiers serve different timescales. The <strong>index</strong> holds current facts
+                (today's priorities, active context). <strong>Topics</strong> hold structured knowledge
+                that evolves slowly (agent persona, project history, tool configurations). <strong>Transcripts</strong>
+                capture the raw session history for consolidation and retrieval.
             </p>
-
-            <p class="body-text reveal">
-                Every night at 03:00 UTC, <strong>autoDream</strong> fires — a Claude-powered consolidation job that
-                compresses raw transcripts into structured topic memories, prunes stale entries, and surfaces
-                recurring patterns. Your agent wakes up smarter than when it went to sleep.
-            </p>
-
             <div class="code-block reveal">
-                <div class="code-block-label">three-layer persistent memory — live now</div>
-                <code style="color:rgba(255,255,255,0.5);"># store a memory via CLI</code>
-                <code>cerebrex memex set "project:stack" "next.js, postgres, redis" --namespace dev</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># recall it across any session</code>
-                <code>cerebrex memex get "project:stack" --namespace dev</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># cloud-backed via memex-mcp</code>
-                <code>cerebrex install @arealcoolco/memex-mcp</code>
-            </div>
+                <div class="code-block-label">python — assembling context from all three layers</div>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+                <code>from cerebrex import CerebreXClient
 
+async with CerebreXClient(api_key="cx-...") as client:
+    # Assemble a system prompt from all memory layers
+    context = await client.memex.assemble_context(
+        "my-agent",
+        topics=["persona", "project-history", "tools"],
+    )
+    # context.system_prompt → ready to inject into Claude
+    print(context.system_prompt)
+    # {"index": 12, "topics": 847, "transcripts": 3241} ← token breakdown
+    print(context.layers)</code>
+            </div>
             <ul class="feature-list">
-                <li><strong>Three-layer architecture</strong> — KV index (fast) → R2 topics (rich) → D1 transcripts (complete)</li>
-                <li><strong>autoDream consolidation</strong> — nightly Claude-powered compression of raw transcripts into structured topics</li>
-                <li><strong>Cross-session persistence</strong> — memories survive restarts, reboots, and re-deployments</li>
-                <li><strong>Agent-scoped</strong> — each agent maintains its own memory, with optional sharing across a HIVE</li>
-                <li><strong>TTL support</strong> — memories expire on schedule, keeping the context window relevant</li>
-                <li><strong>Semantic search</strong> — recall memories by meaning, not just by key</li>
-            </ul>
-        </div>
-    </section>
-
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: AUTH -->
-    <section id="auth">
-        <div class="content">
-            <div class="module-header">
-                <div>
-                    <div class="module-number">module 04</div>
-                    <div class="module-title-lg">AUTH</div>
-                </div>
-                <span class="module-status live">live</span>
-            </div>
-
-            <div class="pull-quote reveal">
-                not every agent should have<br>
-                <em>every key.</em>
-            </div>
-
-            <p class="body-text reveal">
-                When AI agents have access to APIs, databases, and services — access control is not
-                optional. An agent that can read should not automatically be able to write.
-                A community package should not inherit the credentials of your admin account.
-                Trust must be explicit, scoped, and revocable.
-            </p>
-
-            <p class="body-text reveal">
-                CerebreX AUTH is a zero-trust token system with granular permission scopes, JWT signing,
-                rate limiting, and a three-tier role model. Create tokens with exactly the access they need —
-                nothing more. Revoke them instantly. Audit every request.
-            </p>
-
-            <div class="code-block reveal">
-                <div class="code-block-label">create a scoped access token</div>
-                <code>cerebrex auth token create \</code>
-                <code>  --name "ci-publish-bot" \</code>
-                <code>  --scope publish:packages \</code>
-                <code>  --expires 90d</code>
-                <code style="color:rgba(255,255,255,0.4);margin-top:0.5rem;"># available scopes:</code>
-                <code style="color:rgba(255,255,255,0.5);">read:packages   publish:packages</code>
-                <code style="color:rgba(255,255,255,0.5);">admin:packages  admin:users  admin:*</code>
-            </div>
-
-            <ul class="feature-list">
-                <li><strong>Granular scopes</strong> — read, publish, and admin permissions assigned independently</li>
-                <li><strong>Role system</strong> — admin, publisher, and user tiers with cascade permission logic</li>
-                <li><strong>JWT signing</strong> — stateless token verification with configurable expiry</li>
-                <li><strong>Rate limiting</strong> — per-token and per-IP rate limits enforced at the edge</li>
-                <li><strong>Token management</strong> — create, list, rotate, and revoke tokens via CLI or dashboard</li>
-                <li><strong>Audit log</strong> — every authenticated request logged with token ID and timestamp</li>
-            </ul>
-        </div>
-    </section>
-
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: REGISTRY -->
-    <section id="registry">
-        <div class="content">
-            <div class="module-header">
-                <div>
-                    <div class="module-number">module 05</div>
-                    <div class="module-title-lg">REGISTRY</div>
-                </div>
-                <span class="module-status live">live</span>
-            </div>
-
-            <div class="pull-quote reveal">
-                npm changed how developers share code.<br>
-                <em>cerebrex does the same for agents.</em>
-            </div>
-
-            <p class="body-text reveal">
-                The CerebreX Registry is the public index of MCP servers — tools that give AI agents
-                the ability to browse the web, query databases, read files, call APIs, and interact
-                with the world. It is live at <strong>registry.therealcool.site</strong>, open to browse
-                without an account, and open to publish with one.
-            </p>
-
-            <p class="body-text reveal">
-                Official packages from A Real Cool Co. provide battle-tested integrations with GitHub,
-                NASA, and OpenWeatherMap. Community packages extend the ecosystem with custom tools
-                for any service or workflow. Version pinning, featured packages, download tracking,
-                and deprecation management — everything you expect from a modern package registry.
-            </p>
-
-            <div class="code-block reveal">
-                <div class="code-block-label">install & publish MCP packages</div>
-                <code style="color:rgba(255,255,255,0.5);"># install an official package</code>
-                <code>cerebrex install @arealcoolco/github-mcp</code>
-                <code>cerebrex install @arealcoolco/nasa-mcp</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># publish your own</code>
-                <code>cerebrex publish --access public</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># search the registry</code>
-                <code>cerebrex search github</code>
-            </div>
-
-            <ul class="feature-list">
-                <li><strong>Open registry</strong> — browse and install packages without authentication</li>
-                <li><strong>Scoped packages</strong> — publish under your own namespace (@yourname/tool-name)</li>
-                <li><strong>Official packages</strong> — curated first-party integrations from A Real Cool Co.</li>
-                <li><strong>Version management</strong> — semver, pinning, and deprecation support built in</li>
-                <li><strong>Featured packages</strong> — highlighted tools curated by the registry maintainers</li>
-                <li><strong>Download tracking</strong> — see how many times your package has been installed</li>
-                <li><strong>Registry UI</strong> — browser-based dashboard at registry.therealcool.site</li>
+                <li><strong>0.01ms read latency</strong> — Cloudflare KV-backed, globally distributed</li>
+                <li><strong>Three-layer architecture</strong> — index, topics, and transcripts with independent TTLs</li>
+                <li><strong>Context assembly</strong> — one call produces a system prompt from all layers</li>
+                <li><strong>25KB per layer</strong> — enforced size limits prevent context bloat</li>
+                <li><strong>CLI-first</strong> — <code>cerebrex memex set/get/list</code> for any agent, any layer</li>
             </ul>
 
-            <div style="margin-top:2.5rem;" class="reveal">
-                <a href="https://registry.therealcool.site" class="btn-outline" target="_blank" rel="noopener" style="display:inline-block;">browse the registry →</a>
-            </div>
-        </div>
-    </section>
-
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: HIVE -->
-    <section id="hive">
-        <div class="content">
+            <!-- KAIROS -->
+            <div class="glyph-divider">✦ ── module 07 ── ✦</div>
             <div class="module-header">
+                <div class="module-num">07 / 08</div>
                 <div>
-                    <div class="module-number">module 06</div>
-                    <div class="module-title-lg">HIVE</div>
-                </div>
-                <span class="module-status live">live</span>
-            </div>
-
-            <div class="pull-quote reveal">
-                one agent is a tool.<br>
-                a network of agents<br>
-                <em>is a system.</em>
-            </div>
-
-            <p class="body-text reveal">
-                The most powerful AI applications are not single-agent systems. They are networks —
-                a researcher, a planner, a coder, a reviewer, each with their own role, memory,
-                and tool access, coordinated toward a shared goal. Building these networks today
-                requires bespoke orchestration code that is brittle, complex, and hard to reason about.
-            </p>
-
-            <p class="body-text reveal">
-                HIVE is the CerebreX multi-agent orchestration layer — live today. Register agents,
-                assign JWT-signed identities, and coordinate them across three execution strategies:
-                <strong>parallel</strong> (all agents run simultaneously), <strong>pipeline</strong>
-                (output of one feeds the next), and <strong>competitive</strong> (fastest result wins).
-                Six built-in swarm presets let you go from idea to coordinated swarm in one command.
-            </p>
-
-            <p class="body-text reveal">
-                Every task passes through the <strong>risk gate</strong> before execution — automatically
-                classifying each action as LOW, MEDIUM, or HIGH risk and enforcing your policy.
-                High-risk operations require explicit opt-in. Nothing runs without your consent.
-            </p>
-
-            <div class="code-block reveal">
-                <div class="code-block-label">multi-agent swarms with risk gating — live now</div>
-                <code style="color:rgba(255,255,255,0.5);"># spin up a local coordinator</code>
-                <code>cerebrex hive init --name my-hive && cerebrex hive start</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># run a parallel swarm (all agents simultaneously)</code>
-                <code>cerebrex hive worker --strategy parallel --concurrency 4</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># allow high-risk tasks explicitly</code>
-                <code>cerebrex hive worker --allow-high-risk</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># install the hive-mcp to give Claude access</code>
-                <code>cerebrex install @arealcoolco/hive-mcp</code>
-            </div>
-
-            <ul class="feature-list">
-                <li><strong>Three swarm strategies</strong> — parallel, pipeline, competitive — chosen per-task or per-preset</li>
-                <li><strong>Six built-in presets</strong> — research, dev, analysis, content, data, monitoring</li>
-                <li><strong>Risk gate</strong> — LOW/MEDIUM/HIGH classification enforced before every task runs</li>
-                <li><strong>JWT agent identity</strong> — every agent in the HIVE holds a signed, scoped JWT token</li>
-                <li><strong>Role assignment</strong> — define each agent's capability set and access scope at registration</li>
-                <li><strong>State persistence</strong> — HIVE state survives restarts; cloud HIVE backed by D1</li>
-                <li><strong>hive-mcp tool</strong> — install @arealcoolco/hive-mcp to manage your HIVE from inside Claude</li>
-                <li><strong>TRACE integration</strong> — every inter-agent call is observable in the Trace Explorer</li>
-            </ul>
-        </div>
-    </section>
-
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: KAIROS -->
-    <section id="kairos">
-        <div class="content">
-            <div class="module-header">
-                <div>
-                    <div class="module-number">module 07</div>
                     <div class="module-title-lg">KAIROS</div>
+                    <div class="module-status live">live — autonomous daemons</div>
                 </div>
-                <span class="module-status live">live</span>
             </div>
-
-            <div class="pull-quote reveal">
-                agents that only work when you're watching<br>
-                aren't agents.<br>
-                <em>they're autocomplete.</em>
-            </div>
-
+            <div class="pull-quote reveal">Your agent keeps working while you sleep.</div>
             <p class="body-text reveal">
-                KAIROS is the autonomous background daemon for CerebreX. Built on a Cloudflare Durable Object,
-                it runs a <strong>5-minute tick loop</strong> — continuously checking for pending tasks,
-                monitoring conditions, and taking action without being asked. When something goes wrong,
-                KAIROS backs off exponentially: 1 minute → 2 → 4 → up to 30 minutes, then resets on success.
-                Every decision is written to an append-only D1 log for full auditability.
+                KAIROS gives every agent an autonomous background daemon — a Durable Object
+                that wakes on a configurable tick interval (default: 5 minutes), asks Claude
+                whether there is anything to act on, and either takes action or stays quiet.
+                The decision and its reasoning are logged to D1. Every tick is auditable.
             </p>
-
-            <p class="body-text reveal">
-                Register a KAIROS daemon, give it a goal, and walk away. It will keep working —
-                making decisions, logging reasoning, and adapting to errors — until you tell it to stop.
-                The first truly autonomous module in the CerebreX stack.
-            </p>
-
             <div class="code-block reveal">
-                <div class="code-block-label">autonomous background agent — live now</div>
-                <code style="color:rgba(255,255,255,0.5);"># register a KAIROS daemon</code>
-                <code>cerebrex kairos daemon register --agent-id my-agent --goal "Monitor repo activity"</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># submit a long-running task</code>
-                <code>cerebrex kairos task submit --agent-id my-agent --type "data_sync" --payload '{}'</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># check the decision log</code>
-                <code>cerebrex kairos log --agent-id my-agent --limit 20</code>
+                <div class="code-block-label">bash — starting a daemon</div>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+                <code>cerebrex kairos start my-agent --interval 300000
+# Agent wakes every 5 minutes
+# → reads MEMEX context
+# → asks Claude: "is there anything to do?"
+# → if yes: executes queued tasks
+# → logs decision + reasoning to D1
+
+cerebrex kairos log my-agent --limit 10
+# → shows last 10 tick decisions with reasoning</code>
             </div>
-
             <ul class="feature-list">
-                <li><strong>5-minute tick loop</strong> — runs continuously via Durable Object alarm, no polling needed</li>
-                <li><strong>Exponential backoff</strong> — error ramp from 1 min to 30 min cap; resets on success</li>
-                <li><strong>Append-only D1 log</strong> — every decision, action, and reasoning step persisted forever</li>
-                <li><strong>JSON-validated responses</strong> — tick responses validated as objects before acting</li>
-                <li><strong>Goal size limit</strong> — goals capped at 50 KB to prevent runaway context injection</li>
-                <li><strong>agentId validation</strong> — strict format enforcement prevents injection attacks</li>
+                <li><strong>Durable Object tick loop</strong> — survives Cloudflare restarts, guaranteed execution</li>
+                <li><strong>Claude-native decision engine</strong> — the agent itself decides whether to act</li>
+                <li><strong>Task queue integration</strong> — KAIROS processes tasks queued by ULTRAPLAN or external triggers</li>
+                <li><strong>Full audit trail</strong> — every tick logged with reasoning, action, and result</li>
+                <li><strong>Configurable interval</strong> — from 1-minute sprints to hourly background sweeps</li>
             </ul>
-        </div>
-    </section>
 
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- MODULE: ULTRAPLAN -->
-    <section id="ultraplan">
-        <div class="content">
+            <!-- HIVE -->
+            <div class="glyph-divider">✦ ── module 06 ── ✦</div>
             <div class="module-header">
+                <div class="module-num">06 / 08</div>
                 <div>
-                    <div class="module-number">module 08</div>
-                    <div class="module-title-lg">ULTRAPLAN</div>
+                    <div class="module-title-lg">HIVE</div>
+                    <div class="module-status live">live — multi-agent coordination</div>
                 </div>
-                <span class="module-status live">live</span>
             </div>
-
-            <div class="pull-quote reveal">
-                big goals need more<br>
-                than a single agent.<br>
-                <em>they need a plan.</em>
-            </div>
-
+            <div class="pull-quote reveal">Agents that coordinate. Not just communicate.</div>
             <p class="body-text reveal">
-                ULTRAPLAN is the long-range planning module. It uses <strong>Claude Opus</strong> to decompose
-                a complex goal into a structured execution plan, presents it to a human for approval,
-                then hands the approved tasks off to a HIVE swarm for parallel execution.
-                The human stays in the loop where it matters — at the point of commitment, not just observation.
+                HIVE is the multi-agent coordination layer. It lets you launch a swarm of agents
+                around a shared goal, with a risk gate that requires quorum before any destructive
+                action proceeds. Agents in a HIVE share a memory pool (via MEMEX) and coordinate
+                through a structured message bus — not ad-hoc string passing.
             </p>
-
-            <p class="body-text reveal">
-                Goals are capped at 50 KB to prevent context stuffing. The plan is deterministic and auditable.
-                Every subtask produced by ULTRAPLAN inherits the risk gate from HIVE —
-                nothing runs without classification and policy enforcement.
-            </p>
-
-            <div class="code-block reveal">
-                <div class="code-block-label">Opus planning → approval → parallel execution</div>
-                <code style="color:rgba(255,255,255,0.5);"># generate a long-range plan</code>
-                <code>cerebrex ultraplan "Build a REST API for our user database with auth, docs, and tests"</code>
-                <code style="color:rgba(255,255,255,0.5);margin-top:0.5rem;"># review the plan (human approval gate)</code>
-                <code style="color:rgba(255,255,255,0.5);"># then confirm to execute across the HIVE</code>
-                <code>cerebrex ultraplan execute --plan-id &lt;id&gt; --approve</code>
-            </div>
-
             <ul class="feature-list">
-                <li><strong>Opus planning</strong> — Claude Opus decomposes your goal into structured, executable subtasks</li>
-                <li><strong>Human approval gate</strong> — the plan requires explicit confirmation before any execution begins</li>
-                <li><strong>Parallel HIVE execution</strong> — approved tasks fan out across the swarm simultaneously</li>
-                <li><strong>50 KB goal limit</strong> — enforced at the API level, preventing context injection</li>
-                <li><strong>Risk gate inheritance</strong> — every subtask passes through HIVE's risk classification</li>
-                <li><strong>Full auditability</strong> — plan, approval, and execution results all logged to D1</li>
+                <li><strong>Shared memory pool</strong> — all agents in a swarm read from the same MEMEX index</li>
+                <li><strong>Risk gate voting</strong> — destructive actions require configurable quorum before execution</li>
+                <li><strong>Role assignment</strong> — agents take on structured roles (orchestrator, executor, verifier)</li>
+                <li><strong>Structured bus</strong> — typed message passing, not freeform string prompts</li>
+                <li><strong>Audit-ready</strong> — every coordination decision logged and queryable</li>
             </ul>
-        </div>
-    </section>
 
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- USE CASES -->
-    <section id="usecases">
-        <div class="content">
-            <div class="section-label reveal">02 — what you can build with it</div>
-
-            <div class="pull-quote reveal">
-                the infrastructure is boring.<br>
-                <em>what you build on it isn't.</em>
+            <!-- ULTRAPLAN -->
+            <div class="glyph-divider">✦ ── module 08 ── ✦</div>
+            <div class="module-header">
+                <div class="module-num">08 / 08</div>
+                <div>
+                    <div class="module-title-lg">ULTRAPLAN</div>
+                    <div class="module-status live">live — long-range planning</div>
+                </div>
             </div>
-
+            <div class="pull-quote reveal">Give an agent a goal. Get back an approved task graph.</div>
             <p class="body-text reveal">
-                CerebreX is not a product for a single use case. It is an infrastructure layer —
-                the primitive that powers the work above it. Here is a sample of what becomes
-                possible when your agents have memory, tooling, auth, and coordination built in.
+                ULTRAPLAN uses Claude Opus 4 to decompose a high-level goal into a sequenced,
+                dependency-aware task graph. The plan sits in a <code>pending</code> state until a human
+                explicitly approves it. Only then does KAIROS begin executing the queued tasks.
+                This makes long-horizon agent behavior auditable and reversible.
             </p>
+            <div class="code-block reveal">
+                <div class="code-block-label">python — creating and approving a plan</div>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+                <code>from cerebrex import CerebreXClient
 
-            <div class="timeline reveal">
-                <div class="timeline-item">
-                    <div class="timeline-phase">use case 01</div>
-                    <div>
-                        <div class="timeline-title">Personal AI that actually knows you</div>
-                        <div class="timeline-desc">
-                            Use MEMEX to store your preferences, work history, and context across every session.
-                            Your AI assistant remembers that you prefer TypeScript, that your team is on a
-                            deploy freeze this week, and that you asked it to draft the quarterly report last Tuesday.
-                            No more repeating yourself. No more starting from zero.
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-phase">use case 02</div>
-                    <div>
-                        <div class="timeline-title">Automated development pipelines</div>
-                        <div class="timeline-desc">
-                            FORGE generates MCP servers from your internal OpenAPI specs. TRACE records
-                            every tool call during development. REGISTRY distributes the tools to your team.
-                            AUTH ensures only the right agents can publish to production. The entire dev
-                            toolchain for AI agents — in one system.
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-phase">use case 03</div>
-                    <div>
-                        <div class="timeline-title">Multi-agent research pipelines</div>
-                        <div class="timeline-desc">
-                            A HIVE of three agents: a researcher that queries GitHub and NASA APIs,
-                            an analyst that processes the data, a writer that composes the report.
-                            Each has a defined role, scoped tool access, and shares memory.
-                            The coordinator routes tasks. You review the output.
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-phase">use case 04</div>
-                    <div>
-                        <div class="timeline-title">Auditable business automation</div>
-                        <div class="timeline-desc">
-                            TRACE logs every decision your agents make. MEMEX records the context they acted on.
-                            AUTH scopes what they were permitted to do. If something goes wrong, you can replay
-                            the exact sequence of events. Not guesswork — a complete audit trail.
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-phase">use case 05</div>
-                    <div>
-                        <div class="timeline-title">Open ecosystem of shareable tools</div>
-                        <div class="timeline-desc">
-                            Publish an MCP server for your internal API. Share it with your team.
-                            Browse community tools in the registry. Install NASA, GitHub, and weather
-                            integrations in one command. The tools exist. The infrastructure to share
-                            them now exists too.
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-phase">use case 06</div>
-                    <div>
-                        <div class="timeline-title">Autonomous background monitoring with KAIROS</div>
-                        <div class="timeline-desc">
-                            A KAIROS daemon watches your GitHub repo for new issues, classifies them,
-                            and files structured summaries to MEMEX every five minutes — even while you sleep.
-                            When an error spike hits, it escalates and logs the full reasoning chain to D1.
-                            You wake up to a full incident report, not a notification you missed.
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-phase">use case 07</div>
-                    <div>
-                        <div class="timeline-title">Long-range planning with ULTRAPLAN</div>
-                        <div class="timeline-desc">
-                            Feed ULTRAPLAN a complex goal — "migrate our API to GraphQL, add test coverage,
-                            and update the docs." Claude Opus decomposes it into a structured plan.
-                            You review and approve. The HIVE executes all subtasks in parallel.
-                            Human judgment at the point that matters. Agent speed everywhere else.
-                        </div>
-                    </div>
-                </div>
+async with CerebreXClient(api_key="cx-...") as client:
+    # Claude Opus decomposes the goal
+    plan = await client.ultraplan.create(
+        "my-agent",
+        goal="Audit all GitHub repos for security issues and open issues for findings",
+    )
+    print(plan.plan_id)  # "plan-abc123"
+    print(plan.status)   # "pending" — waiting for human approval
+
+    # Review the plan, then approve
+    await client.ultraplan.approve(plan.plan_id)
+    # KAIROS begins executing tasks in dependency order</code>
             </div>
         </div>
     </section>
 
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- PROOF OF WORK -->
-    <section id="proof">
+    <!-- ── BENCHMARKS ── -->
+    <section id="benchmarks">
         <div class="content">
-            <div class="section-label reveal">03 — proof of work</div>
-
+            <div class="section-label">03 — benchmarks</div>
             <div class="pull-quote reveal">
-                we don't do press releases.<br>
-                <em>we ship.</em>
+                Real numbers. Real competition. <em>Measured, not estimated.</em>
             </div>
-
             <p class="body-text reveal">
-                CerebreX is live. Every module described in this document is deployed and running.
-                This is not a roadmap. This is a receipt.
+                All benchmarks run on v0.9.2 against production endpoints. Competitor numbers
+                measured with identical hardware and methodology. Full results at
+                <code>benchmarks/results/v0.9.2.json</code> in the repository.
             </p>
 
             <div class="stat-grid reveal">
                 <div class="stat-cell">
-                    <div class="stat-number">8</div>
-                    <div class="stat-label">modules live</div>
+                    <div class="stat-number">26×</div>
+                    <div class="stat-label">faster startup vs LangChain</div>
+                    <div class="stat-sub">CerebreX ~80ms vs LangChain ~2,100ms</div>
                 </div>
                 <div class="stat-cell">
-                    <div class="stat-number">9</div>
-                    <div class="stat-label">packages in registry</div>
+                    <div class="stat-number">42×</div>
+                    <div class="stat-label">faster startup vs CrewAI</div>
+                    <div class="stat-sub">CerebreX ~80ms vs CrewAI ~3,400ms</div>
                 </div>
                 <div class="stat-cell">
-                    <div class="stat-number">0.9.1</div>
-                    <div class="stat-label">current version</div>
+                    <div class="stat-number">0.01ms</div>
+                    <div class="stat-label">MEMEX read p50 latency</div>
+                    <div class="stat-sub">reads from Cloudflare KV edge cache</div>
                 </div>
                 <div class="stat-cell">
-                    <div class="stat-number">1</div>
-                    <div class="stat-label">command to install</div>
+                    <div class="stat-number">27,435</div>
+                    <div class="stat-label">TRACE ops / sec</div>
+                    <div class="stat-sub">structured step recording throughput</div>
                 </div>
             </div>
 
-            <ul class="feature-list">
-                <li><strong>Registry is live</strong> — registry.therealcool.site — browse, search, and install without an account</li>
-                <li><strong>CLI on npm</strong> — <code style="font-family:'JetBrains Mono',monospace;font-size:0.85em;">npm install -g cerebrex</code> — install in one command, works today</li>
-                <li><strong>MEMEX v2</strong> — three-layer memory (KV + R2 + D1) with nightly autoDream consolidation, live on Cloudflare</li>
-                <li><strong>KAIROS daemon</strong> — autonomous background agent with 5-min tick loop and exponential backoff, live on Cloudflare</li>
-                <li><strong>ULTRAPLAN</strong> — Opus-powered planning with human approval gate and parallel HIVE execution</li>
-                <li><strong>HIVE swarms</strong> — parallel, pipeline, and competitive strategies with risk gate and 6 presets</li>
-                <li><strong>8 official MCP packages</strong> — memex-mcp, hive-mcp, fetch-mcp, datetime-mcp, kvstore-mcp, github-mcp, nasa-mcp, openweathermap-mcp</li>
-                <li><strong>Open source</strong> — every line is on GitHub. Fork it. Run it. Own it.</li>
-            </ul>
-
-            <div style="margin-top:2.5rem;" class="reveal">
-                <a href="https://registry.therealcool.site" class="btn-outline" target="_blank" rel="noopener" style="display:inline-block;margin-right:1rem;">see the live registry →</a>
-                <a href="https://github.com/arealcoolco/CerebreX" class="btn-outline" target="_blank" rel="noopener" style="display:inline-block;">read the source →</a>
-            </div>
+            <p class="body-text reveal" style="margin-top:2rem;">
+                <strong>Competitive feature matrix</strong> — what CerebreX includes out of the box vs. what each competitor requires you to build yourself:
+            </p>
+            <table class="compare-table reveal">
+                <thead>
+                    <tr>
+                        <th>capability</th>
+                        <th>cerebrex</th>
+                        <th>langchain</th>
+                        <th>crewai</th>
+                        <th>autogen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="highlight">
+                        <td>persistent memory</td>
+                        <td class="yes">✓ built-in</td>
+                        <td class="no">DIY</td>
+                        <td class="no">DIY</td>
+                        <td class="no">DIY</td>
+                    </tr>
+                    <tr>
+                        <td>background daemons</td>
+                        <td class="yes">✓ KAIROS</td>
+                        <td class="no">—</td>
+                        <td class="no">—</td>
+                        <td class="no">—</td>
+                    </tr>
+                    <tr>
+                        <td>multi-agent risk gating</td>
+                        <td class="yes">✓ HIVE</td>
+                        <td class="no">—</td>
+                        <td class="no">partial</td>
+                        <td class="no">—</td>
+                    </tr>
+                    <tr>
+                        <td>structured observability</td>
+                        <td class="yes">✓ TRACE</td>
+                        <td class="no">DIY</td>
+                        <td class="no">DIY</td>
+                        <td class="no">DIY</td>
+                    </tr>
+                    <tr>
+                        <td>package registry</td>
+                        <td class="yes">✓ live</td>
+                        <td class="no">—</td>
+                        <td class="no">—</td>
+                        <td class="no">—</td>
+                    </tr>
+                    <tr>
+                        <td>long-range planning</td>
+                        <td class="yes">✓ ULTRAPLAN</td>
+                        <td class="no">DIY</td>
+                        <td class="no">partial</td>
+                        <td class="no">DIY</td>
+                    </tr>
+                    <tr>
+                        <td>MCP scaffolding</td>
+                        <td class="yes">✓ FORGE</td>
+                        <td class="no">—</td>
+                        <td class="no">—</td>
+                        <td class="no">—</td>
+                    </tr>
+                    <tr>
+                        <td>startup time</td>
+                        <td class="yes">~80ms</td>
+                        <td class="no">~2,100ms</td>
+                        <td class="no">~3,400ms</td>
+                        <td class="no">~1,800ms</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="body-text reveal" style="font-size:0.85rem;color:var(--dimmer);">
+                DIY = requires custom implementation by the engineering team.
+                Competitor numbers measured April 2026. Full methodology in BENCHMARKS.md.
+            </p>
         </div>
     </section>
 
-    <div class="glyph-divider">— ✦ —</div>
-
-    <!-- DATA SOVEREIGNTY / WHY OPEN SOURCE -->
-    <section id="mission">
+    <!-- ── PYTHON SDK ── -->
+    <section id="sdk">
         <div class="content">
-            <div class="section-label reveal">04 — why this must be open source</div>
-
+            <div class="section-label">04 — python sdk</div>
             <div class="pull-quote reveal">
-                companies own the AI.<br>
-                you should own<br>
-                <em>what it knows about you.</em>
+                Every module. One async client. Zero configuration.
             </div>
-
             <p class="body-text reveal">
-                The AI companies are building extraordinary things. Models that write code, reason through
-                problems, and plan complex tasks with remarkable capability. But they are also building
-                something else — a centralized infrastructure layer where your agent's memory,
-                your tool configurations, your workflow data, and your coordination logic all live
-                on their servers, under their terms, subject to their pricing and their decisions
-                about what your agents are permitted to do.
+                The CerebreX Python SDK is an async-first client library wrapping every REST API
+                in the platform. Built with <code>httpx</code> and <code>pydantic v2</code> for type-safe,
+                high-performance access to MEMEX, TRACE, KAIROS, HIVE, ULTRAPLAN, and the Registry.
+                Available now on PyPI.
             </p>
+            <div class="code-block reveal">
+                <div class="code-block-label">bash — install</div>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+                <code>pip install cerebrex
 
-            <p class="body-text reveal">
-                <strong>This is the arrangement the industry is defaulting into.</strong> Not because
-                anyone chose it, but because no one built the alternative. Until now.
-            </p>
+# With LangChain integration
+pip install "cerebrex[langchain]"
 
-            <div class="manifesto reveal">
-                <div class="manifesto-line"><span class="num">01</span><span>Your agent's memory is your data. It should live where you control it.</span></div>
-                <div class="manifesto-line"><span class="num">02</span><span>If you can't audit what your agent did, you cannot be accountable for it.</span></div>
-                <div class="manifesto-line"><span class="num">03</span><span>Agents that act without a human in the loop are liability, not leverage.</span></div>
-                <div class="manifesto-line"><span class="num">04</span><span>The infrastructure layer should never be a black box owned by one company.</span></div>
-                <div class="manifesto-line"><span class="num">05</span><span>Open source is not idealism. It is the only structural guarantee of long-term trust.</span></div>
-                <div class="manifesto-line"><span class="num">06</span><span>AI accountability starts with observability. You cannot hold accountable what you cannot see.</span></div>
-                <div class="manifesto-line"><span class="num">07</span><span>The developer who builds the standard wins the ecosystem. Let it be an open one.</span></div>
+# With CrewAI integration
+pip install "cerebrex[crewai]"</code>
             </div>
+            <div class="code-block reveal">
+                <div class="code-block-label">python — full agent session with MEMEX + TRACE</div>
+                <button class="copy-btn" onclick="copyCode(this)">copy</button>
+                <code>import asyncio
+from cerebrex import CerebreXClient
 
-            <p class="body-text reveal">
-                CerebreX is the infrastructure layer between the AI companies and you. The registry
-                that you can self-host. The memory system where your data stays local unless you choose
-                otherwise. The coordination layer you can inspect, fork, and run on your own terms.
-                The audit trail that proves what your agents did and why.
-            </p>
+async def run_agent():
+    async with CerebreXClient(api_key="cx-your-key") as client:
+        # Load persistent memory into system prompt
+        ctx = await client.memex.assemble_context(
+            "research-agent",
+            topics=["persona", "project-history"],
+        )
 
-            <p class="body-text reveal">
-                This is not anti-AI. It is pro-human. The most powerful agents in the world are
-                the ones humans trust enough to deploy broadly — and trust comes from transparency,
-                auditability, and control. CerebreX is how you build agents people can trust.
-            </p>
+        # Start a trace session
+        session_id = await client.trace.create_session("research-agent")
 
-            <p class="body-text reveal">
-                <strong>This is what it means to keep humans in the loop.</strong>
-                Not a checkbox. Not a disclaimer. Infrastructure that makes it structurally impossible
-                for agents to operate without accountability.
-            </p>
+        # Your agent logic here — inject ctx.system_prompt into Claude
+        # ...
+
+        # Record what happened
+        await client.trace.record_step(
+            session_id, "research_complete",
+            input={"query": "AI infrastructure trends"},
+            output={"findings": 7, "sources": 12},
+            duration_ms=4820,
+        )
+
+        # Update memory with new findings
+        await client.memex.write_index(
+            "research-agent",
+            ctx.system_prompt + "\\n- Completed trend research 2026-04-11",
+        )
+
+asyncio.run(run_agent())</code>
+            </div>
+            <ul class="feature-list">
+                <li><strong>Async-first</strong> — built on <code>httpx.AsyncClient</code> for non-blocking I/O</li>
+                <li><strong>Pydantic v2 models</strong> — every API response is a typed, validated dataclass</li>
+                <li><strong>Full coverage</strong> — MEMEX, TRACE, KAIROS, HIVE, ULTRAPLAN, Registry, AUTH</li>
+                <li><strong>LangChain integration</strong> — inject MEMEX memory into LangChain agent prompts</li>
+                <li><strong>CrewAI integration</strong> — use CerebreX tools inside a CrewAI crew</li>
+                <li><strong>Typed exceptions</strong> — <code>AuthenticationError</code>, <code>NotFoundError</code>, <code>RateLimitError</code></li>
+                <li><strong>Python 3.10+</strong> — tested on 3.10, 3.11, and 3.12 in CI</li>
+            </ul>
         </div>
     </section>
 
-    <div class="glyph-divider">— ✦ —</div>
+    <!-- ── TRY IT LIVE ── -->
+    <section id="try-live" style="background:rgba(255,255,255,0.02);border-top:1px solid var(--rule);">
+        <div class="content" style="text-align:center;">
+            <div class="section-label" style="justify-content:center;">05 — try it live</div>
+            <h2 class="reveal" style="font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:900;line-height:1.1;margin-bottom:1.5rem;">
+                CerebreX Project Example
+            </h2>
+            <p class="body-text reveal" style="max-width:580px;margin:0 auto 2.5rem;">
+                Every module is live and interactive at <strong>registry.therealcool.site</strong>.
+                Drop a trace file, query the package registry, explore the MEMEX API, and
+                watch the KAIROS daemon status — all in your browser, no install required.
+                This is what CerebreX looks like in production.
+            </p>
+            <div class="reveal" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem;">
+                <a href="https://registry.therealcool.site" class="btn-solid" target="_blank" rel="noopener">open the project example →</a>
+                <a href="https://registry.therealcool.site#trace" class="btn-outline" target="_blank" rel="noopener">try the trace viewer</a>
+                <a href="https://registry.therealcool.site#registry" class="btn-outline" target="_blank" rel="noopener">browse the registry</a>
+            </div>
+            <div class="reveal" style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.15em;color:var(--dimmer);text-transform:uppercase;">
+                registry.therealcool.site — live, no login required
+            </div>
+        </div>
+    </section>
 
-    <!-- QUICKSTART -->
+    <!-- ── QUICKSTART ── -->
     <section id="quickstart">
         <div class="content">
-            <div class="section-label reveal">05 — quickstart</div>
-
-            <div class="pull-quote reveal">
-                from zero to deployed<br>
-                <em>in five steps.</em>
-            </div>
-
+            <div class="section-label">06 — quickstart</div>
+            <div class="pull-quote reveal">From zero to autonomous agent in five steps.</div>
             <div class="steps">
                 <div class="step">
                     <div class="step-num">01</div>
@@ -1976,114 +1665,183 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
                 <div class="step">
                     <div class="step-num">02</div>
                     <div class="step-content">
-                        <div class="step-title">Browse and install packages</div>
-                        <code class="step-code">cerebrex search github</code>
-                        <code class="step-code">cerebrex install @arealcoolco/github-mcp</code>
+                        <div class="step-title">Authenticate</div>
+                        <code class="step-code">cerebrex auth login</code>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-num">03</div>
                     <div class="step-content">
-                        <div class="step-title">Scaffold a new tool with FORGE</div>
-                        <code class="step-code">cerebrex forge my-tool</code>
-                        <code class="step-code">cd my-tool && npm run dev</code>
+                        <div class="step-title">Give your agent memory</div>
+                        <code class="step-code">cerebrex memex set my-agent "Project: CerebreX integration" --key context</code>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-num">04</div>
                     <div class="step-content">
-                        <div class="step-title">Trace your agent in real time</div>
-                        <code class="step-code">cerebrex trace --live</code>
+                        <div class="step-title">Start a background daemon</div>
+                        <code class="step-code">cerebrex kairos start my-agent --interval 300000</code>
                     </div>
                 </div>
                 <div class="step">
                     <div class="step-num">05</div>
                     <div class="step-content">
-                        <div class="step-title">Publish to the registry</div>
-                        <code class="step-code">cerebrex auth token create --scope publish:packages</code>
-                        <code class="step-code">cerebrex publish --access public</code>
+                        <div class="step-title">Install community tooling from the registry</div>
+                        <code class="step-code">cerebrex install @arealcoolco/github-mcp
+cerebrex configure @arealcoolco/github-mcp --env GITHUB_TOKEN=ghp_...</code>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ACCESS -->
-    <section id="access">
+    <!-- ── OPEN SOURCE ── -->
+    <section id="open-source">
         <div class="content">
-            <div class="access-section">
-                <div class="section-label" style="justify-content:center;text-align:center;">06 — early access</div>
-                <h2 class="access-title reveal">be part of what's<br><em>being built.</em></h2>
-                <p class="access-sub reveal">
-                    we are in early days. if you want to build with us, use what we make,
-                    or watch something real take shape — leave your email.
-                    no spam. no noise. just signal.
-                </p>
-                <form class="email-form reveal" id="accessForm" onsubmit="handleSubmit(event)">
-                    <input type="email" placeholder="your@email.com" required id="emailInput" autocomplete="email">
-                    <button type="submit" id="submitBtn">join the list →</button>
-                </form>
-                <p class="form-note" id="formNote">we move quietly. you'll hear from us when it matters.</p>
-
-                <div style="margin-top:3rem; display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;" class="reveal">
-                    <a href="https://registry.therealcool.site" class="btn-outline" target="_blank" rel="noopener">browse the registry</a>
-                    <a href="https://github.com/arealcoolco/CerebreX" class="btn-outline" target="_blank" rel="noopener">view on github</a>
+            <div class="section-label">07 — open source</div>
+            <div class="pull-quote reveal">
+                Infrastructure this important should belong to everyone. <em>Not a company.</em>
+            </div>
+            <p class="body-text reveal">
+                CerebreX is <strong>Apache 2.0 licensed</strong>. Every line of the CLI, every worker,
+                every SDK — open, forkable, auditable. We believe the operating system layer for AI agents
+                should be a public good, not a commercial moat.
+            </p>
+            <p class="body-text reveal">
+                Built by <strong>A Real Cool Co.</strong> — a creative studio building the future
+                through an Afro Futurist lens. We ship real things. We open-source what matters.
+                CerebreX is the thing that matters most right now.
+            </p>
+            <div class="manifesto" style="margin-top:3rem;">
+                <div class="manifesto-line">
+                    <span class="num">→</span>
+                    <span>The agent OS should not be owned by a single company.</span>
                 </div>
+                <div class="manifesto-line">
+                    <span class="num">→</span>
+                    <span>Every agent deserves production-grade infrastructure on day one.</span>
+                </div>
+                <div class="manifesto-line">
+                    <span class="num">→</span>
+                    <span>Memory, autonomy, and coordination are not premium features.</span>
+                </div>
+                <div class="manifesto-line">
+                    <span class="num">→</span>
+                    <span>The community builds better tools than any one team. Let them share.</span>
+                </div>
+            </div>
+            <div class="reveal" style="margin-top:3rem;display:flex;gap:1rem;flex-wrap:wrap;">
+                <a href="https://github.com/arealcoolco/CerebreX" class="btn-solid" target="_blank" rel="noopener">star on github →</a>
+                <a href="https://github.com/arealcoolco/CerebreX/blob/main/CONTRIBUTING.md" class="btn-outline" target="_blank" rel="noopener">contributing guide</a>
             </div>
         </div>
     </section>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-left">
-            © 2026 a real cool co. — all rights reserved<br>
-            <span style="opacity:0.5;">built quietly. shipped with intention.</span>
+    <!-- ── STAY UPDATED ── -->
+    <section id="access">
+        <div class="content">
+            <div class="section-label">08 — stay updated</div>
+            <h2 class="reveal" style="font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3rem);font-weight:900;line-height:1.1;margin-bottom:1rem;">
+                Get notified when new modules ship.
+            </h2>
+            <p class="body-text reveal">
+                The roadmap includes a cloud dashboard, MCP server marketplace,
+                agent-to-agent billing, and a hosted multi-tenant HIVE.
+                Drop your email to hear about it first.
+            </p>
+            <div class="access-form reveal">
+                <input type="email" id="emailInput" placeholder="your@email.com">
+                <button id="submitBtn" onclick="submitEmail()">notify me</button>
+            </div>
+            <p class="reveal" style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--dimmer);letter-spacing:0.1em;margin-top:1rem;">
+                no spam. just ship notes. unsubscribe any time.
+            </p>
         </div>
-        <div class="footer-right">
-            <a href="/" class="footer-link">home</a>
-            <a href="https://registry.therealcool.site" class="footer-link">registry</a>
-            <a href="https://github.com/arealcoolco/CerebreX" class="footer-link" target="_blank" rel="noopener">github</a>
-            <a href="https://bsky.app/profile/therealcool.site" class="footer-link" target="_blank" rel="noopener">bluesky</a>
+    </section>
+
+    <!-- ── FOOTER ── -->
+    <footer>
+        <div class="content">
+            <div class="footer-links">
+                <a href="/">home</a>
+                <a href="#problem">the problem</a>
+                <a href="#architecture">architecture</a>
+                <a href="#benchmarks">benchmarks</a>
+                <a href="#sdk">python sdk</a>
+                <a href="#quickstart">quickstart</a>
+                <a href="https://registry.therealcool.site" target="_blank" rel="noopener">project example</a>
+                <a href="https://github.com/arealcoolco/CerebreX" target="_blank" rel="noopener">github</a>
+                <a href="https://www.npmjs.com/package/cerebrex" target="_blank" rel="noopener">npm</a>
+                <a href="https://pypi.org/project/cerebrex/" target="_blank" rel="noopener">pypi</a>
+            </div>
+            <div class="footer-copy">
+                cerebrex v0.9.2 &mdash; apache 2.0 &mdash; a real cool co. &mdash; therealcool.site
+            </div>
         </div>
     </footer>
 
     <script>
-        // ── Scroll progress bar
+        // ── Progress bar
         const prog = document.getElementById('progress');
         window.addEventListener('scroll', () => {
-            const h = document.body.scrollHeight - window.innerHeight;
-            prog.style.width = (window.scrollY / h * 100) + '%';
+            const total = document.documentElement.scrollHeight - window.innerHeight;
+            prog.style.width = (window.scrollY / total * 100) + '%';
         });
 
-        // ── Intersection observer — reveal + manifesto + steps + feature list items
-        const revealObserver = new IntersectionObserver((entries) => {
+        // ── Intersection observer for reveal animations
+        const io = new IntersectionObserver((entries) => {
             entries.forEach((entry, i) => {
                 if (entry.isIntersecting) {
-                    setTimeout(() => entry.target.classList.add('visible'), i * 60);
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, i * 60);
+                    io.unobserve(entry.target);
                 }
             });
         }, { threshold: 0.1 });
 
-        document.querySelectorAll('.reveal, .manifesto-line, .step, .feature-list li').forEach(el => revealObserver.observe(el));
+        document.querySelectorAll('.reveal, .manifesto-line, .feature-list li, .step, .timeline-item').forEach(el => {
+            io.observe(el);
+        });
 
-        // ── Email form
-        function handleSubmit(e) {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            const note = document.getElementById('formNote');
-            btn.textContent = 'noted ✓';
-            btn.style.background = 'rgba(255,255,255,0.85)';
-            btn.disabled = true;
-            note.textContent = 'we got you. watch this space.';
-            note.style.color = 'rgba(255,255,255,0.6)';
+        // ── Nav active state on scroll
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(a => a.classList.remove('active'));
+                    const active = document.querySelector('.nav-links a[href="#' + entry.target.id + '"]');
+                    if (active) active.classList.add('active');
+                }
+            });
+        }, { threshold: 0.4 });
+        sections.forEach(s => observer.observe(s));
+
+        // ── Copy code blocks
+        function copyCode(btn) {
+            const block = btn.closest('.code-block').querySelector('code');
+            navigator.clipboard.writeText(block.textContent).then(() => {
+                btn.textContent = 'copied!';
+                setTimeout(() => btn.textContent = 'copy', 2000);
+            });
         }
 
-        // ── Smooth scroll for anchor links
+        // ── Email submit
+        function submitEmail() {
+            const email = document.getElementById('emailInput').value;
+            const btn = document.getElementById('submitBtn');
+            if (!email || !email.includes('@')) return;
+            btn.disabled = true;
+            btn.textContent = 'noted ✓';
+        }
+
+        // ── Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(a => {
             a.addEventListener('click', e => {
                 e.preventDefault();
                 const target = document.querySelector(a.getAttribute('href'));
-                if (target) target.scrollIntoView({ behavior: 'smooth' });
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
 
@@ -2094,7 +1852,7 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             if (now - lastTrail < 80) return;
             lastTrail = now;
             const c = document.createElement('div');
-            c.style.cssText = 'position:fixed;width:3px;height:3px;background:rgba(255,255,255,0.4);pointer-events:none;z-index:950;border-radius:50%;left:' + e.clientX + 'px;top:' + e.clientY + 'px;transition:opacity 0.6s ease,transform 0.6s ease;';
+            c.style.cssText = 'position:fixed;width:3px;height:3px;background:rgba(255,255,255,0.35);pointer-events:none;z-index:950;border-radius:50%;left:' + e.clientX + 'px;top:' + e.clientY + 'px;transition:opacity 0.6s ease,transform 0.6s ease;';
             document.body.appendChild(c);
             requestAnimationFrame(() => { c.style.opacity = '0'; c.style.transform = 'scale(0.3)'; });
             setTimeout(() => c.remove(), 600);

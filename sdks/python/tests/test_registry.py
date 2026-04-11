@@ -7,8 +7,6 @@ from pytest_httpx import HTTPXMock
 
 from cerebrex._http import HttpClient
 from cerebrex.registry import RegistryClient
-from cerebrex.exceptions import NotFoundError
-
 from .conftest import REGISTRY_BASE
 
 

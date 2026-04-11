@@ -8,7 +8,7 @@ from pytest_httpx import HTTPXMock
 from cerebrex._http import HttpClient
 from cerebrex.exceptions import AuthenticationError, NotFoundError
 from cerebrex.memex import MemexClient
-from .conftest import FAKE_API_KEY, MEMEX_BASE
+from .conftest import MEMEX_BASE
 
 
 @pytest.fixture

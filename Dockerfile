@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM oven/bun:1-alpine AS builder
+FROM oven/bun:1-debian AS builder
 
 WORKDIR /workspace
 

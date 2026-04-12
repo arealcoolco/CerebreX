@@ -76,7 +76,7 @@ export class RegistryClient {
   // ── Private fetch with error handling ────────────────────────────────────────
   private async apiFetch(url: string, options?: RequestInit): Promise<Response> {
     const headers: Record<string, string> = {
-      'User-Agent': 'cerebrex-cli/0.3.0',
+      'User-Agent': 'cerebrex-cli/0.9.4',
       ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
       ...(options?.headers as Record<string, string> || {}),
     };

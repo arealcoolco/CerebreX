@@ -128,3 +128,70 @@ export function buildPolicy(flags: {
     allowHigh: flags.allowHighRisk ?? false,
   };
 }
+
+// ── Aggregate risk scoring ────────────────────────────────────────────────────
+
+const RISK_WEIGHT: Record<RiskLevel, number> = { low: 1, medium: 3, high: 10 };
+
+/**
+ * Compute cumulative risk for an AlterPlan task array before execution begins.
+ * If score >= threshold (default 12, env CEREBREX_AGGREGATE_RISK_THRESHOLD),
+ * the full plan requires RECORD SWARM quorum rather than per-action gating.
+ */
+export function aggregateRiskScore(taskTypes: string[]): {
+  score: number;
+  breakdown: Array<{ type: string; risk: RiskLevel; weight: number }>;
+  requiresQuorum: boolean;
+} {
+  const threshold = parseInt(process.env['CEREBREX_AGGREGATE_RISK_THRESHOLD'] ?? '12', 10);
+  const breakdown = taskTypes.map((t) => {
+    const risk = classifyRisk(t);
+    return { type: t, risk, weight: RISK_WEIGHT[risk] };
+  });
+  const score = breakdown.reduce((s, b) => s + b.weight, 0);
+  return { score, breakdown, requiresQuorum: score >= threshold };
+}
+
+// ── Velocity tracking ─────────────────────────────────────────────────────────
+
+export const DEFAULT_VELOCITY_LIMIT = parseInt(
+  process.env['CEREBREX_VELOCITY_LIMIT'] ?? '3', 10
+);
+export const DEFAULT_VELOCITY_WINDOW_MS = parseInt(
+  process.env['CEREBREX_VELOCITY_WINDOW_MS'] ?? '300000', 10
+);
+
+export interface VelocityEntry { type: string; risk: RiskLevel; ts: number }
+
+/**
+ * Check whether an agent has hit the velocity limit within the rolling window.
+ * Mutates `history` in-place (prunes stale entries, appends new action).
+ * Returns { exceeded, count, limit } — callers escalate to quorum when exceeded.
+ */
+export function checkVelocity(
+  history: VelocityEntry[],
+  newType: string,
+  windowMs = DEFAULT_VELOCITY_WINDOW_MS,
+  limit = DEFAULT_VELOCITY_LIMIT,
+): { exceeded: boolean; count: number; limit: number } {
+  const now = Date.now();
+  const cutoff = now - windowMs;
+  const pruned = history.filter((e) => e.ts >= cutoff && e.risk !== 'low');
+  history.length = 0;
+  history.push(...pruned);
+  const risk = classifyRisk(newType);
+  if (risk !== 'low') history.push({ type: newType, risk, ts: now });
+  const count = history.length;
+  return { exceeded: count > limit, count, limit };
+}
+
+/**
+ * Agents with "risk_override" scope (decoded from JWT `scopes` claim) can bypass
+ * velocity limits. Only admin-level agents should hold this scope.
+ */
+export function hasRiskOverride(jwtPayload: Record<string, unknown>): boolean {
+  const s = jwtPayload['scopes'];
+  if (typeof s === 'string') return s.split(' ').includes('risk_override');
+  if (Array.isArray(s)) return (s as string[]).includes('risk_override');
+  return false;
+}

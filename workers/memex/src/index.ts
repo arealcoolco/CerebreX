@@ -199,6 +199,86 @@ export default {
 
     if (!auth(request, env)) return err('Unauthorized', 401);
 
+    // ── Plan task-execution state (AlterPlan ↔ Kairos reconciliation) ──────
+    const planMatch = pathname.match(/^\/v1\/plans\/([^/]+)\/tasks(?:\/([^/]+))?$/);
+    if (planMatch) {
+      const planId = decodeURIComponent(planMatch[1]!);
+      const taskId = planMatch[2] ? decodeURIComponent(planMatch[2]) : null;
+      if (!validSegment(planId)) return err('Invalid planId', 400);
+
+      // Ensure table exists (idempotent bootstrap)
+      await env.DB.prepare(`CREATE TABLE IF NOT EXISTS task_execution_state (
+        task_id TEXT NOT NULL,
+        parent_plan_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        dependency_ids TEXT NOT NULL DEFAULT '[]',
+        started_at TEXT,
+        completed_at TEXT,
+        error_payload TEXT,
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (parent_plan_id, task_id)
+      )`).run();
+
+      if (taskId) {
+        if (method === 'GET') {
+          const row = await env.DB.prepare(
+            `SELECT * FROM task_execution_state WHERE parent_plan_id = ? AND task_id = ?`
+          ).bind(planId, taskId).first();
+          if (!row) return err('Task not found', 404);
+          return json(row);
+        }
+        if (method === 'PATCH') {
+          const body = await request.json() as Record<string, unknown>;
+          const allowed = ['status','started_at','completed_at','error_payload','retry_count'];
+          const sets: string[] = ["updated_at = datetime('now')"];
+          const vals: unknown[] = [];
+          for (const k of allowed) {
+            if (k in body) { sets.push(`${k} = ?`); vals.push(body[k]); }
+          }
+          if (sets.length === 1) return err('No valid fields to update', 400);
+          vals.push(planId, taskId);
+          await env.DB.prepare(
+            `UPDATE task_execution_state SET ${sets.join(', ')} WHERE parent_plan_id = ? AND task_id = ?`
+          ).bind(...vals).run();
+          return json({ success: true, planId, taskId });
+        }
+      } else {
+        if (method === 'GET') {
+          const status = url.searchParams.get('status');
+          const stale = url.searchParams.get('stale') === 'true';
+          let q = `SELECT * FROM task_execution_state WHERE parent_plan_id = ?`;
+          const binds: unknown[] = [planId];
+          if (status) { q += ` AND status = ?`; binds.push(status); }
+          if (stale) { q += ` AND status = 'running' AND started_at < datetime('now', '-10 minutes')`; }
+          q += ` ORDER BY created_at ASC`;
+          const { results } = await env.DB.prepare(q).bind(...binds).all();
+          return json({ planId, tasks: results ?? [], total: (results ?? []).length });
+        }
+        if (method === 'POST') {
+          const body = await request.json() as Record<string, unknown>;
+          const tasks = Array.isArray(body['tasks']) ? body['tasks'] as Record<string,unknown>[] : [body];
+          const stmt = env.DB.prepare(
+            `INSERT OR REPLACE INTO task_execution_state
+             (task_id, parent_plan_id, status, dependency_ids, retry_count, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+          );
+          for (const t of tasks) {
+            if (typeof t['task_id'] !== 'string' || !validSegment(t['task_id'] as string)) continue;
+            await stmt.bind(
+              t['task_id'], planId,
+              t['status'] ?? 'pending',
+              JSON.stringify(t['dependency_ids'] ?? []),
+              t['retry_count'] ?? 0,
+            ).run();
+          }
+          return json({ success: true, planId, queued: tasks.length });
+        }
+      }
+      return err('Method not allowed', 405);
+    }
+
     // ── Agent management ────────────────────────────────────────────────────
     const agentMatch = pathname.match(
       /^\/v1\/agents\/([^/]+)\/memory(?:\/(.+))?$/

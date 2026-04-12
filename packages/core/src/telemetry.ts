@@ -11,8 +11,6 @@
  *                     or set CEREBREX_TELEMETRY=false in your environment
  */
 
-import { getConfig } from './config.js';
-
 interface TelemetryEvent {
   event: string;
   command?: string;
@@ -24,13 +22,10 @@ interface TelemetryEvent {
 }
 
 export async function trackEvent(event: TelemetryEvent): Promise<void> {
-  // Respect opt-out immediately
-  if (process.env['CEREBREX_TELEMETRY'] === 'false') return;
+  // Opt-in only — disabled unless CEREBREX_TELEMETRY=true is explicitly set
+  if (process.env['CEREBREX_TELEMETRY'] !== 'true') return;
 
   try {
-    const config = getConfig();
-    if (!config.telemetry) return;
-
     // Fire-and-forget — never block the CLI on telemetry
     fetch('https://t.cerebrex.dev/event', {
       method: 'POST',

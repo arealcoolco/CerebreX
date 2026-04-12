@@ -22,6 +22,7 @@ import { authCommand } from './commands/auth.js';
 import { hiveCommand } from './commands/hive.js';
 import { benchCommand } from './commands/bench.js';
 import { testCommand } from './commands/test.js';
+import { doctorCommand } from './commands/doctor.js';
 
 const VERSION = '0.9.4';
 
@@ -63,6 +64,7 @@ program.addCommand(authCommand);
 program.addCommand(hiveCommand);
 program.addCommand(benchCommand);
 program.addCommand(testCommand);
+program.addCommand(doctorCommand);
 
 // ── Handle Unknown Commands ───────────────────────────────────────────────────
 program.on('command:*', (operands) => {

@@ -165,3 +165,64 @@ traceCommand
     });
     console.log('');
   });
+
+// cerebrex trace task <task_id>
+// Reconstructs the full execution timeline for a specific task_id across all
+// local trace sessions — including HIVE coordination events and MEMEX transitions.
+traceCommand
+  .command('task <taskId>')
+  .description('Reconstruct the full execution timeline for a task ID across all trace sessions')
+  .option('--session <id>', 'Limit search to a specific session')
+  .option('--json', 'Output as structured JSON')
+  .action((taskId: string, options) => {
+    if (!fs.existsSync(TRACES_DIR)) {
+      console.error(chalk.red('\nNo traces directory found.\n'));
+      process.exit(1);
+    }
+
+    interface TraceStep {
+      type: string; toolName?: string; inputs?: unknown; output?: unknown;
+      error?: string; latencyMs?: number; timestamp?: string; sessionId?: string;
+    }
+
+    const sessions = options.session
+      ? [`${options.session}.json`]
+      : fs.readdirSync(TRACES_DIR).filter((f) => f.endsWith('.json'));
+
+    const matches: TraceStep[] = [];
+
+    for (const file of sessions) {
+      const filePath = path.join(TRACES_DIR, file);
+      try {
+        const raw = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as { steps?: TraceStep[] };
+        const sessionId = file.replace('.json', '');
+        for (const step of raw.steps ?? []) {
+          const haystack = JSON.stringify(step).toLowerCase();
+          if (haystack.includes(taskId.toLowerCase())) {
+            matches.push({ ...step, sessionId });
+          }
+        }
+      } catch { /* skip corrupt files */ }
+    }
+
+    if (options.json) {
+      console.log(JSON.stringify({ taskId, matches, total: matches.length }, null, 2));
+      return;
+    }
+
+    if (matches.length === 0) {
+      console.log(chalk.dim(`\nNo trace events found for task ID: ${taskId}\n`));
+      return;
+    }
+
+    console.log(chalk.cyan(`\n  Trace timeline for task: ${chalk.bold(taskId)}\n`));
+    for (const step of matches) {
+      const ts = step.timestamp ?? '?';
+      const icon = step.error ? chalk.red('✗') : chalk.green('→');
+      const latency = step.latencyMs != null ? chalk.dim(` ${step.latencyMs}ms`) : '';
+      console.log(`  ${icon} ${chalk.dim(ts)} ${chalk.bold(step.toolName ?? step.type)}${latency} ${chalk.dim(`[${step.sessionId}]`)}`);
+      if (step.error) console.log(`      ${chalk.red(step.error)}`);
+      if (step.output) console.log(`      ${chalk.dim(JSON.stringify(step.output).slice(0, 120))}`);
+    }
+    console.log('');
+  });

@@ -20,7 +20,14 @@ import os from 'os';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { gateAction, buildPolicy } from '../core/auth/risk-gate.js';
+import { gateAction, buildPolicy, checkVelocity, hasRiskOverride, type VelocityEntry } from '../core/auth/risk-gate.js';
+
+// ── Per-agent velocity accumulators (in-process rolling window) ───────────────
+const agentVelocity = new Map<string, VelocityEntry[]>();
+function getHistory(id: string): VelocityEntry[] {
+  if (!agentVelocity.has(id)) agentVelocity.set(id, []);
+  return agentVelocity.get(id)!;
+}
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -736,7 +743,6 @@ hiveCommand
       const gate = gateAction(task.type, riskPolicy);
       if (!gate.allowed) {
         console.log(`  ${chalk.red('⛔')} ${chalk.bold(task.type)} ${chalk.dim(task.id.slice(0, 8))} ${chalk.red(`[${gate.risk.toUpperCase()}]`)} ${chalk.dim(gate.reason)}`);
-        // Mark as failed so the coordinator knows it was blocked
         try {
           await fetch(`${hiveUrl}/tasks/${task.id}`, {
             method: 'PATCH',
@@ -746,6 +752,42 @@ hiveCommand
         } catch { /* best-effort */ }
         inFlight--;
         return;
+      }
+
+      // ── Velocity gate — escalate to quorum if chained medium-risk actions ────
+      // Agents with risk_override scope bypass this check (admin only).
+      const jwtPayload = (() => {
+        try {
+          const parts = token.split('.');
+          if (parts.length !== 3) return {};
+          return JSON.parse(Buffer.from(parts[1]!, 'base64url').toString('utf-8')) as Record<string, unknown>;
+        } catch { return {}; }
+      })();
+      if (!hasRiskOverride(jwtPayload)) {
+        const history = getHistory(agentId);
+        const velocity = checkVelocity(history, task.type);
+        if (velocity.exceeded) {
+          const reason = `Velocity limit: ${velocity.count}/${velocity.limit} medium+ actions in window — quorum required`;
+          console.log(`  ${chalk.red('⚡')} ${chalk.bold('VELOCITY LIMIT')} ${chalk.dim(task.id.slice(0, 8))} ${chalk.red(reason)}`);
+          if (tracePort && traceSession) {
+            await emitTraceStep(tracePort, traceSession, {
+              type: 'error',
+              toolName: `hive:${agentId}:velocity-escalation`,
+              inputs: { task_type: task.type, velocity_count: velocity.count, limit: velocity.limit },
+              latencyMs: 0,
+              error: reason,
+            });
+          }
+          try {
+            await fetch(`${hiveUrl}/tasks/${task.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ status: 'failed', error: reason }),
+            });
+          } catch { /* best-effort */ }
+          inFlight--;
+          return;
+        }
       }
 
       console.log(`  ${chalk.yellow('→')} ${chalk.bold(task.type)} ${chalk.dim(task.id.slice(0, 8))} ${chalk.dim(`[${gate.risk}]`)} ${chalk.dim(payloadPreview)}`);

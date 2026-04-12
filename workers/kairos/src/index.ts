@@ -24,6 +24,7 @@ export interface Env {
   KAIROS: DurableObjectNamespace;
   TASK_QUEUE: Queue;
   MEMEX_INDEX?: KVNamespace;        // optional — enables memex-set/get task types
+  MEMEX_URL?: string;               // optional — enables AlterPlan state reconciliation
   CEREBREX_API_KEY: string;
   ANTHROPIC_API_KEY: string;
   TICK_INTERVAL_MS: string;
@@ -262,6 +263,9 @@ export class KairosDaemon implements DurableObject {
     const now = new Date().toISOString();
     await this.state.storage.put('lastTick', now);
 
+    // Heal any orphaned AlterPlan tasks from previous crashed ticks
+    await this.reconcile(agentId);
+
     const pending = await this.env.DB.prepare(
       `SELECT COUNT(*) as n FROM tasks WHERE agent_id = ? AND status = 'queued'`
     ).bind(agentId).first<{ n: number }>();
@@ -373,6 +377,94 @@ Respond ONLY with valid JSON — no prose, no markdown:
   private async reschedule(): Promise<void> {
     const intervalMs = parseInt(this.env.TICK_INTERVAL_MS, 10) || 300_000;
     await this.state.storage.setAlarm(Date.now() + intervalMs);
+  }
+
+  // ── AlterPlan state reconciliation ───────────────────────────────────────
+  // Runs at the top of every tick. Queries MEMEX for stale running task states,
+  // marks them failed, and blocks downstream dependents. Heals orphaned tasks
+  // that Kairos failed to update on a previous crashed tick.
+  private async reconcile(agentId: string): Promise<void> {
+    if (!this.env.MEMEX_URL || !this.env.CEREBREX_API_KEY) return;
+
+    try {
+      // Find running tasks that have been in-flight for >10 minutes (stale)
+      const url = `${this.env.MEMEX_URL}/v1/plans/${agentId}/tasks?status=running&stale=true`;
+      const res = await fetch(url, {
+        headers: { 'x-api-key': this.env.CEREBREX_API_KEY },
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (!res.ok) return;
+
+      const { tasks } = await res.json() as { tasks: Array<{
+        task_id: string; parent_plan_id: string; dependency_ids: string; retry_count: number;
+      }> };
+      if (!tasks?.length) return;
+
+      for (const staleTask of tasks) {
+        const retries = (staleTask.retry_count ?? 0) + 1;
+        const newStatus = retries >= 3 ? 'failed' : 'pending'; // re-queue if retries remain
+
+        // Update stale task
+        await fetch(`${this.env.MEMEX_URL}/v1/plans/${staleTask.parent_plan_id}/tasks/${staleTask.task_id}`, {
+          method: 'PATCH',
+          headers: { 'x-api-key': this.env.CEREBREX_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: newStatus,
+            error_payload: JSON.stringify({ reason: 'stale-timeout', healed_at: new Date().toISOString() }),
+            retry_count: retries,
+          }),
+          signal: AbortSignal.timeout(3_000),
+        }).catch(() => { /* best-effort */ });
+
+        // If permanently failed, mark downstream dependents as blocked
+        if (newStatus === 'failed') {
+          const allTasksRes = await fetch(
+            `${this.env.MEMEX_URL}/v1/plans/${staleTask.parent_plan_id}/tasks`,
+            { headers: { 'x-api-key': this.env.CEREBREX_API_KEY }, signal: AbortSignal.timeout(3_000) }
+          );
+          if (!allTasksRes.ok) continue;
+          const { tasks: allTasks } = await allTasksRes.json() as { tasks: Array<{
+            task_id: string; parent_plan_id: string; dependency_ids: string; status: string;
+          }> };
+
+          for (const t of (allTasks ?? [])) {
+            try {
+              const deps: string[] = JSON.parse(t.dependency_ids ?? '[]');
+              if (deps.includes(staleTask.task_id) && t.status === 'pending') {
+                await fetch(
+                  `${this.env.MEMEX_URL}/v1/plans/${t.parent_plan_id}/tasks/${t.task_id}`,
+                  {
+                    method: 'PATCH',
+                    headers: { 'x-api-key': this.env.CEREBREX_API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      status: 'rolled_back',
+                      error_payload: JSON.stringify({
+                        reason: 'dependency-failed',
+                        blocked_by: staleTask.task_id,
+                        chain: deps,
+                      }),
+                    }),
+                    signal: AbortSignal.timeout(3_000),
+                  }
+                ).catch(() => { /* best-effort */ });
+              }
+            } catch { /* ignore parse errors */ }
+          }
+
+          // Log to daemon_log for TRACE visibility
+          await this.env.DB.prepare(
+            `INSERT INTO daemon_log (agent_id, tick_at, decided, reasoning, action, result, latency_ms)
+             VALUES (?, datetime('now'), 0, ?, 'reconcile', ?, 0)`
+          ).bind(
+            agentId,
+            `Reconcile: task ${staleTask.task_id} timed out after ${retries} retries`,
+            JSON.stringify({ healed: staleTask.task_id, plan: staleTask.parent_plan_id, newStatus }),
+          ).run().catch(() => { /* best-effort */ });
+        }
+      }
+    } catch {
+      // Reconciliation errors must never crash the daemon tick
+    }
   }
 }
 

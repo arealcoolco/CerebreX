@@ -51,8 +51,17 @@ jobs:
         run: cd apps/cli && bun run ${{ matrix.script }}
 
       - name: Upload binary to release
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: apps/cli/dist/${{ matrix.artifact }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload binary as artifact (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: apps/cli/dist/${{ matrix.artifact }}
+          retention-days: 7

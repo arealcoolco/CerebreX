@@ -1091,6 +1091,7 @@ const WHITEPAPER_HTML = `<!DOCTYPE html>
             <a href="#benchmarks">benchmarks</a>
             <a href="#sdk">sdk</a>
             <a href="#quickstart">quickstart</a>
+            <a href="#security">security</a>
             <a href="https://registry.therealcool.site" class="nav-cta" target="_blank" rel="noopener">try it live →</a>
         </div>
     </nav>
@@ -1764,10 +1765,60 @@ cerebrex test run --verbose</code>
         </div>
     </section>
 
+    <!-- ── SECURITY ── -->
+    <section id="security">
+        <div class="content">
+            <div class="section-label">08 — security</div>
+            <h2 class="reveal" style="font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:900;line-height:1.1;margin-bottom:2rem;">Built for the OWASP Agentic AI Top 10.</h2>
+            <p class="body-text reveal">
+                CerebreX v0.9.4 shipped a comprehensive security audit pass covering every module.
+                The threat model is aligned with the
+                <a href="https://genai.owasp.org" target="_blank" rel="noopener" style="color:var(--accent);">OWASP Top 10 for Agentic Applications (2025)</a>.
+            </p>
+            <div class="module-grid reveal" style="margin-top:2rem;">
+                <div class="module-card">
+                    <div class="module-card-name">SSRF Protection</div>
+                    <div class="module-card-desc">Every caller-supplied URL is validated through <code>ssrfCheck()</code> before any network I/O — blocks private IPs, loopback, link-local, and cloud metadata endpoints (169.254.169.254, metadata.google.internal).</div>
+                </div>
+                <div class="module-card">
+                    <div class="module-card-name">Risk Gate</div>
+                    <div class="module-card-desc">Every HIVE task is classified LOW / MEDIUM / HIGH before execution. HIGH-risk actions are blocked by default. The gate runs before the handler — a blocked task can never execute.</div>
+                </div>
+                <div class="module-card">
+                    <div class="module-card-name">Timing-Safe Auth</div>
+                    <div class="module-card-desc">All API key and secret comparisons use <code>crypto.timingSafeEqual</code> — never <code>===</code>. HIVE JWTs are HMAC-SHA256 signed with <code>exp</code>, <code>nbf</code>, and <code>iat</code> enforced.</div>
+                </div>
+                <div class="module-card">
+                    <div class="module-card-name">Memory Integrity</div>
+                    <div class="module-card-desc">Local MEMEX writes include SHA-256 checksums. Reads verify before returning — tampered files are rejected. Namespace isolation prevents cross-agent reads without explicit grants.</div>
+                </div>
+                <div class="module-card">
+                    <div class="module-card-name">Structured Daemon Output</div>
+                    <div class="module-card-desc">KAIROS tick responses require structured JSON <code>&#123;act, reasoning, task_type, task_payload&#125;</code>. Free-text action strings are rejected. <code>task_type</code> is validated against the supported enum before dispatch.</div>
+                </div>
+                <div class="module-card">
+                    <div class="module-card-name">Security Headers</div>
+                    <div class="module-card-desc">All workers respond with <code>Content-Security-Policy</code>, <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, and <code>Referrer-Policy</code> on every response.</div>
+                </div>
+                <div class="module-card">
+                    <div class="module-card-name">Credential Hardening</div>
+                    <div class="module-card-desc">Auth tokens and hive config are written with <code>mode: 0o600</code>. On Windows, <code>icacls</code> restricts file access to the current user immediately after every write.</div>
+                </div>
+                <div class="module-card">
+                    <div class="module-card-name">Append-Only Audit Log</div>
+                    <div class="module-card-desc">KAIROS daemon tick history is written to D1 with no DELETE or UPDATE ever issued — every decision is permanently auditable and tamper-evident.</div>
+                </div>
+            </div>
+            <div class="reveal" style="margin-top:2.5rem;">
+                <a href="https://github.com/arealcoolco/CerebreX/blob/main/SECURITY.md" class="btn-outline" target="_blank" rel="noopener">full security policy →</a>
+            </div>
+        </div>
+    </section>
+
     <!-- ── STAY UPDATED ── -->
     <section id="access">
         <div class="content">
-            <div class="section-label">08 — stay updated</div>
+            <div class="section-label">09 — stay updated</div>
             <h2 class="reveal" style="font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,3rem);font-weight:900;line-height:1.1;margin-bottom:1rem;">
                 Get notified when new modules ship.
             </h2>

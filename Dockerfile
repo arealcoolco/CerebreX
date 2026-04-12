@@ -18,8 +18,8 @@ RUN cd packages/types          && bun run build
 RUN cd packages/core           && bun run build
 RUN cd packages/registry-client && bun run build
 
-# Compile a self-contained Linux x64 binary (no Node/Bun needed at runtime)
-RUN cd apps/cli && bun run build:linux-x64
+# Compile a self-contained musl binary (Alpine-compatible; no glibc dependency)
+RUN cd apps/cli && bun run build:linux-x64-musl
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM alpine:3.19
@@ -27,7 +27,7 @@ FROM alpine:3.19
 # ca-certificates: needed for HTTPS calls to Cloudflare workers / npm registry
 RUN apk add --no-cache ca-certificates
 
-COPY --from=builder /workspace/apps/cli/dist/cerebrex-linux-x64 /usr/local/bin/cerebrex
+COPY --from=builder /workspace/apps/cli/dist/cerebrex-linux-x64-musl /usr/local/bin/cerebrex
 RUN chmod +x /usr/local/bin/cerebrex
 
 # Sanity check during build

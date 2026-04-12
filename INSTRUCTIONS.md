@@ -2,7 +2,7 @@
 
 Everything you need to go from zero to running AI agents with memory, tooling, and coordination.
 
-**Current version: v0.9.1**
+**Current version: v0.9.4**
 
 ---
 
@@ -22,7 +22,7 @@ npm install -g cerebrex
 cerebrex --help
 ```
 
-You should see all commands: `build`, `trace`, `memex`, `auth`, `hive`, `publish`, and more.
+You should see all commands: `build`, `trace`, `memex`, `auth`, `hive`, `test`, `publish`, and more.
 
 **Or download a standalone binary** (no Node.js required):
 - `cerebrex-linux-x64` — Linux x64 (Ubuntu, Debian, Chrome OS)
@@ -276,6 +276,10 @@ To block even MEDIUM tasks: add `--block-medium-risk`.
 | `memex-get` | `{ key, namespace? }` | LOW |
 | `memex-set` | `{ key, value, namespace?, ttl? }` | MEDIUM |
 | `fetch` | `{ url, method?, headers?, body? }` | MEDIUM |
+| `claude-execute` | `{ description, store_key? }` | MEDIUM |
+| `kairos-action` | `{ task_type, task_payload }` | MEDIUM |
+
+> **Note:** `fetch` tasks are SSRF-protected — private IP ranges, loopback, link-local, and cloud metadata endpoints are blocked before the request is sent.
 
 ### Swarm strategies — multi-agent presets
 
@@ -420,7 +424,67 @@ Traces are saved to `~/.cerebrex/traces/`.
 
 ---
 
-## 10 — Test FORGE (MCP Server Generation)
+## 10 — Test the Agent Test Runner
+
+`cerebrex test` lets you write YAML test cases that record a real agent run and then replay/assert it:
+
+```bash
+# scaffold a test suite in the current directory
+cerebrex test init
+
+# run all tests (verbose output)
+cerebrex test run --verbose
+
+# run only tests tagged "smoke"
+cerebrex test run --tag smoke
+
+# bail on first failure
+cerebrex test run --bail
+
+# output machine-readable JSON (for CI)
+cerebrex test run --json
+
+# record a new golden file from a live agent run
+cerebrex test record --name my-test
+
+# list all test cases
+cerebrex test list
+
+# inspect a specific test case
+cerebrex test show my-test
+```
+
+**Example test file (`cerebrex-tests/smoke.yaml`):**
+```yaml
+name: echo smoke test
+tag: smoke
+steps:
+  - type: hive-send
+    agent: researcher
+    task_type: echo
+    payload: { hello: world }
+assertions:
+  - field: result.hello
+    op: eq
+    value: world
+  - field: status
+    op: eq
+    value: completed
+```
+
+**Assertion operators:**
+
+| Operator | Meaning |
+|----------|---------|
+| `eq` | Exact equality |
+| `contains` | String or array contains value |
+| `exists` | Field is present and non-null |
+| `gt` / `lt` | Numeric comparison |
+| `match` | Regex match |
+
+---
+
+## 11 — Test FORGE (MCP Server Generation)
 
 ```bash
 # scaffold a new MCP server from an OpenAPI spec
@@ -438,7 +502,7 @@ ls ./my-petstore-mcp/
 
 ---
 
-## 11 — Publish to the Registry
+## 12 — Publish to the Registry
 
 ```bash
 # build your package
@@ -456,7 +520,7 @@ cerebrex search petstore
 
 ---
 
-## 12 — Test the Registry Web UI
+## 13 — Test the Registry Web UI
 
 Open [registry.therealcool.site](https://registry.therealcool.site) in a browser:
 
@@ -528,8 +592,10 @@ cerebrex hive register --id myagent --name "My Agent"
 **HIVE worker blocks a task you expected to run**
 ```bash
 # Check the task type's risk level with cerebrex hive strategies
-# For HIGH-risk types (fetch, deploy, send, etc.):
+# For HIGH-risk types (deploy, delete, send, daemon-start, etc.):
 cerebrex hive worker --id <id> --token <jwt> --allow-high-risk
+# For MEDIUM-risk types (fetch, memex-set, write, configure, claude-execute, kairos-action):
+# These run by default; block them with --block-medium-risk
 ```
 
 **Package not found after install**

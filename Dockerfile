@@ -18,16 +18,18 @@ RUN cd packages/types          && bun run build
 RUN cd packages/core           && bun run build
 RUN cd packages/registry-client && bun run build
 
-# Compile a self-contained musl binary (Alpine-compatible; no glibc dependency)
-RUN cd apps/cli && bun run build:linux-x64-musl
+# Compile a self-contained Linux x64 binary (glibc; matches debian:12-slim runtime)
+RUN cd apps/cli && bun run build:linux-x64
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
-FROM alpine:3.19
+# Use debian:slim — Bun compiled binaries link libstdc++/libgcc which glibc provides.
+# Alpine (musl) lacks these symbols even with the musl cross-compile target.
+FROM debian:12-slim
 
 # ca-certificates: needed for HTTPS calls to Cloudflare workers / npm registry
-RUN apk add --no-cache ca-certificates
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /workspace/apps/cli/dist/cerebrex-linux-x64-musl /usr/local/bin/cerebrex
+COPY --from=builder /workspace/apps/cli/dist/cerebrex-linux-x64 /usr/local/bin/cerebrex
 RUN chmod +x /usr/local/bin/cerebrex
 
 # Sanity check during build
